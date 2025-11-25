@@ -30,6 +30,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     compileOnly("org.projectlombok:lombok")
 
+    implementation("org.telegram:telegrambots:6.8.0")
+    implementation("org.telegram:telegrambots-spring-boot-starter:6.8.0")
+
     implementation("mysql:mysql-connector-java:8.0.33")
 
     annotationProcessor("org.projectlombok:lombok")
