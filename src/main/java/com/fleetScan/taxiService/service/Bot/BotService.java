@@ -1,6 +1,7 @@
 package com.fleetScan.taxiService.service.Bot;
 
 import com.fleetScan.taxiService.entity.Admin.Fleet;
+import com.fleetScan.taxiService.entity.Autopark.Driver.Driver;
 import com.fleetScan.taxiService.repository.Admin.FleetRepository;
 import com.fleetScan.taxiService.repository.Autopark.DriverRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -32,6 +34,7 @@ public class BotService {
     }
 
     public String handleMessage(Long chatId, String message) {
+
         if(message == null || message.isEmpty() || message.isBlank()) return "❌ Пустое сообщение.";
 
         log.info("Получено от {}: {}", chatId, message);
@@ -57,6 +60,7 @@ public class BotService {
     }
 
     private String handleStartCommand(Long chatId) {
+
         Optional<Fleet> existingCheckingFleet = fleetRepository.findByAdminChatId(chatId);
 
         if (existingCheckingFleet.isPresent()) {
@@ -109,9 +113,30 @@ public class BotService {
     }
 
     private String addNewDriver(Long chatId, String driverName) {
+        driverName = driverName.trim();
 
+        if (driverName.length() < 2) return "❌ Введите нормальное имя.";
 
+        var fleetOpt = fleetRepository.findByAdminChatId(chatId);
+        if (fleetOpt.isEmpty()) return "❌ Не найден ваш автопарк.";
 
+        if (driverRepository.findByDriverName(driverName).isPresent()) {
+            return "⚠\uFE0F Такой водитель уже есть.";
+        }
+
+        String inviteCode = "INV-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+        Driver driver = new Driver();
+        driver.setName(driverName);
+        driver.setFleet(fleetOpt.get());
+        driver.setInviteCode(inviteCode);
+        driver.setIsActive(true);
+
+        driverRepository.save(driver);
+        userStates.remove(chatId);
+
+        return String.format("✅ Добавлен: %s\n🔗 Ссылка: t.me/FleetScanBot?start=%s",
+                driverName, inviteCode);
     }
 
 }
