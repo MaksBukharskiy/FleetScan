@@ -139,4 +139,22 @@ public class BotService {
                 driverName, inviteCode);
     }
 
+    private String handleInviteCode(Long chatId, String inviteCode) {
+        var driverOpt = driverRepository.findByInviteCode(inviteCode);
+
+        if(driverOpt.isEmpty()){
+            return "❌ Неверная ссылка.";
+        }
+
+        Driver driver = driverOpt.get();
+        if(driver.getChatId() != null){
+            return "ℹ\uFE0F Вы уже зарегистрированы.";
+        }
+
+        driver.setChatId(chatId);
+        driverRepository.save(driver);
+
+        return String.format("🎉 Привет, %s! Отправьте фото машины.", driver.getName());
+    }
+
 }
