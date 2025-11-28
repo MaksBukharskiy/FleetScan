@@ -93,9 +93,10 @@ public class BotService {
         fleet.setAdminChatId(chatId);
         fleet.setName(name);
         fleet.setPublicId("TAXI" + (int)(Math.random() * 900 + 100));
-        fleetRepository.save(fleet);
 
+        fleetRepository.save(fleet);
         userStates.remove(chatId);
+
         log.info("Создан автопарк: {} (ID: {})", name, fleet.getPublicId());
 
         return String.format("✅ Готово! Ваш ID: %s\nТеперь /add_driver", fleet.getPublicId());
@@ -109,7 +110,7 @@ public class BotService {
 
         userStates.put(chatId, AWAITING_DRIVER_NAME);
 
-        return "✏️ Введите ФИО водителя:";
+        return "✏️ Введите ФИО водителя: ";
     }
 
     private String addNewDriver(Long chatId, String driverName) {
@@ -139,7 +140,7 @@ public class BotService {
                 driverName, inviteCode);
     }
 
-    private String handleInviteCode(Long chatId, String inviteCode) {
+    public String handleInviteLink(Long chatId, String inviteCode) {
         var driverOpt = driverRepository.findByInviteCode(inviteCode);
 
         if(driverOpt.isEmpty()){
@@ -147,9 +148,7 @@ public class BotService {
         }
 
         Driver driver = driverOpt.get();
-        if(driver.getChatId() != null){
-            return "ℹ\uFE0F Вы уже зарегистрированы.";
-        }
+        if(driver.getChatId() != null) return "ℹ\uFE0F Вы уже зарегистрированы.";
 
         driver.setChatId(chatId);
         driverRepository.save(driver);

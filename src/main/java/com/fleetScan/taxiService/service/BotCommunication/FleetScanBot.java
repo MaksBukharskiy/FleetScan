@@ -41,7 +41,9 @@ public class FleetScanBot extends TelegramLongPollingBot {
             }
 
         }
-        catch (Exception e) {}
+        catch (Exception e) {
+            log.error("❌Ошибка при обработке сообщения", e);
+            sendMessage(chatId, "❌Произошла ошибка. Попробуйте позже.");
+        }
     }
-
 }
