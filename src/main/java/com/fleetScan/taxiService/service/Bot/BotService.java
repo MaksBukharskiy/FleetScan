@@ -16,22 +16,19 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class BotService {
     private final FleetRepository fleetRepository;
     private final DriverRepository driverRepository;
+
+    public BotService(FleetRepository fleetRepository, DriverRepository driverRepository) {
+        this.fleetRepository = fleetRepository;
+        this.driverRepository = driverRepository;
+    }
 
     private Map <Long, String> userStates = new HashMap<>();
 
     private static final String AWAITING_FLEET_NAME = "AWAITING_FLEET_NAME";
     private static final String AWAITING_DRIVER_NAME = "AWAITING_DRIVER_NAME";
-
-
-    @Autowired
-    public BotService(FleetRepository fleetRepository, DriverRepository driverRepository) {
-        this.fleetRepository = fleetRepository;
-        this.driverRepository = driverRepository;
-    }
 
     public String handleMessage(Long chatId, String message) {
 
