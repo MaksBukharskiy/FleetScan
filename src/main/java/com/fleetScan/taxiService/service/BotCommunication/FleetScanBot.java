@@ -1,4 +1,4 @@
-package com.fleetScan.taxiService.service;
+package com.fleetScan.taxiService.service.BotCommunication;
 
 import com.fleetScan.taxiService.service.Bot.BotService;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +15,16 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class FleetScanBot extends TelegramLongPollingBot {
 
+    @Override
+    public String getBotUsername() {
+        return botName;
+    }
+
+    @Override
+    public String getBotToken() {
+        return botToken;
+    }
+
     private final BotService botService;
 
     @Value("${telegram.bot.token}")
@@ -25,25 +35,50 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        Long chatId = null;
+
         try {
             if (update.hasMessage() && update.getMessage().hasText()) {
-                Long chatId = update.getMessage().getChatId();
+                chatId = update.getMessage().getChatId();
                 String text = update.getMessage().getText();
 
-                if (text.startsWith("/start ") || text.contains(" ")){
-                    String[] parts = text.split(" ");
+                if (text.startsWith("/start ") || text.contains(" ")) {
+                    String[] parts = text.split(" ", 2);
                     if (parts.length > 1) {
                         String response = botService.handleInviteLink(chatId, parts[1]);
                         sendMessage(chatId, response);
                         return;
                     }
                 }
+
+                String response = botService.handleMessage(chatId, text);
+                sendMessage(chatId, response);
+
+            } else {
+                log.warn("❌ Получено сообщение без текста");
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Ошибка при обработке сообщения", e);
+
+            if (chatId != null) {
+                sendMessage(chatId, "❌ Произошла ошибка. Попробуйте позже.");
             }
 
         }
-        catch (Exception e) {
-            log.error("❌Ошибка при обработке сообщения", e);
-            sendMessage(chatId, "❌Произошла ошибка. Попробуйте позже.");
+    }
+
+    public void sendMessage(Long chatId, String text) {
+
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId.toString());
+        message.setText(text);
+
+        try{
+            execute(message);
+        } catch (TelegramApiException e){
+            log.error("❌ Ошибка отправки сообщения", e);
         }
+
     }
 }
