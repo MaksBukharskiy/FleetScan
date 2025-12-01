@@ -15,6 +15,14 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class FleetScanBot extends TelegramLongPollingBot {
 
+    private final BotService botService;
+
+    @Value("${telegram.bot.token}")
+    private String botToken;
+
+    @Value("${telegram.bot.name}")
+    private String botName;
+
     @Override
     public String getBotUsername() {
         return botName;
@@ -25,16 +33,10 @@ public class FleetScanBot extends TelegramLongPollingBot {
         return botToken;
     }
 
-    private final BotService botService;
-
-    @Value("${telegram.bot.token}")
-    private String botToken;
-
-    @Value("${telegram.bot.name}")
-    private String botName;
-
     @Override
     public void onUpdateReceived(Update update) {
+        System.out.println("🟢 БОТ ПОЛУЧИЛ СООБЩЕНИЕ: " + update.getMessage().getText());
+
         Long chatId = null;
 
         try {
@@ -60,25 +62,21 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
         } catch (Exception e) {
             log.error("❌ Ошибка при обработке сообщения", e);
-
             if (chatId != null) {
                 sendMessage(chatId, "❌ Произошла ошибка. Попробуйте позже.");
             }
-
         }
     }
 
     public void sendMessage(Long chatId, String text) {
-
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());
         message.setText(text);
 
-        try{
+        try {
             execute(message);
-        } catch (TelegramApiException e){
+        } catch (TelegramApiException e) {
             log.error("❌ Ошибка отправки сообщения", e);
         }
-
     }
 }

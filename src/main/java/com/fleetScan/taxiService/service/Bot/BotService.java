@@ -118,7 +118,7 @@ public class BotService {
         var fleetOpt = fleetRepository.findByAdminChatId(chatId);
         if (fleetOpt.isEmpty()) return "❌ Не найден ваш автопарк.";
 
-        if (driverRepository.findByDriverName(driverName).isPresent()) {
+        if (driverRepository.findByName(driverName).isPresent()) {
             return "⚠\uFE0F Такой водитель уже есть.";
         }
 
