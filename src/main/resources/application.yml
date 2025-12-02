@@ -15,5 +15,5 @@ logging:
     com.fleetscan: DEBUG
 telegram:
   bot:
-    token: "8219016516:AAG9fnkjUdy-1gLjWG3CLZkJWkmqlqDE9u0"
+    token: "8219016516:AAET9RoCVdiVG1ymoA60h5I49HaHx_yVsS8"
     name: "fleetScanBot"
