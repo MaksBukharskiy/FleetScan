@@ -13,19 +13,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.apache.commons.lang3.ArrayUtils.startsWith;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class BotService {
+
     private final FleetRepository fleetRepository;
     private final DriverRepository driverRepository;
 
-    public BotService(FleetRepository fleetRepository, DriverRepository driverRepository) {
-        this.fleetRepository = fleetRepository;
-        this.driverRepository = driverRepository;
-    }
+    private Map <Long, String> userStates = new ConcurrentHashMap<>();
 
-    private Map <Long, String> userStates = new HashMap<>();
+    public String getUserState(Long chatId) {
+        return userStates.get(chatId);
+    }
 
     private static final String AWAITING_FLEET_NAME = "AWAITING_FLEET_NAME";
     private static final String AWAITING_DRIVER_NAME = "AWAITING_DRIVER_NAME";
@@ -46,7 +50,8 @@ public class BotService {
         }
 
 
-        if(message.equals("/start")){
+        if ("/start".equals(message)){
+
             return handleStartCommand(chatId);
         }
         if ("/add_driver".equals(message)) {
@@ -56,7 +61,7 @@ public class BotService {
         return "Неизвестная команда. Используйте /start";
     }
 
-    private String handleStartCommand(Long chatId) {
+    public String handleStartCommand(Long chatId) {
 
         Optional<Fleet> existingCheckingFleet = fleetRepository.findByAdminChatId(chatId);
 
@@ -70,7 +75,7 @@ public class BotService {
         return "\uD83D\uDC4B Введите название автопарка: ";
     }
 
-    private String createNewFleet(Long chatId, String name) {
+    public String createNewFleet(Long chatId, String name) {
         name = name.trim();
 
         if (name == null || name.isEmpty() || name.isBlank()) {
@@ -110,7 +115,7 @@ public class BotService {
         return "✏️ Введите ФИО водителя: ";
     }
 
-    private String addNewDriver(Long chatId, String driverName) {
+    public String addNewDriver(Long chatId, String driverName) {
         driverName = driverName.trim();
 
         if (driverName.length() < 2) return "❌ Введите нормальное имя.";

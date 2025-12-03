@@ -27,7 +27,7 @@ public class Driver {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, name = "chat_id", unique = true)
+    @Column(name = "chat_id", unique = true)
     private Long chatId;
 
     @Column(name = "invite_code", unique = true)

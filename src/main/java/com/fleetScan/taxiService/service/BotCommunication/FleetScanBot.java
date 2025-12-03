@@ -35,8 +35,6 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        System.out.println("🟢 БОТ ПОЛУЧИЛ СООБЩЕНИЕ: " + update.getMessage().getText());
-
         Long chatId = null;
 
         try {
@@ -44,17 +42,39 @@ public class FleetScanBot extends TelegramLongPollingBot {
                 chatId = update.getMessage().getChatId();
                 String text = update.getMessage().getText();
 
-                if (text.startsWith("/start ") || text.contains(" ")) {
+                String state = botService.getUserState(chatId);
+
+                if ("AWAITING_FLEET_NAME".equals(state)) {
+                    String response = botService.createNewFleet(chatId, text);
+                    sendMessage(chatId, response);
+                    return;
+                }
+
+                if ("AWAITING_DRIVER_NAME".equals(state)) {
+                    String response = botService.addNewDriver(chatId, text);
+                    sendMessage(chatId, response);
+                    return;
+                }
+
+                if (text.startsWith("/start")) {
                     String[] parts = text.split(" ", 2);
                     if (parts.length > 1) {
                         String response = botService.handleInviteLink(chatId, parts[1]);
                         sendMessage(chatId, response);
-                        return;
+                    } else {
+                        String response = botService.handleStartCommand(chatId);
+                        sendMessage(chatId, response);
                     }
+                    return;
                 }
 
-                String response = botService.handleMessage(chatId, text);
-                sendMessage(chatId, response);
+                if ("/add_driver".equals(text)) {
+                    String response = botService.startToAddDriver(chatId);
+                    sendMessage(chatId, response);
+                    return;
+                }
+
+                sendMessage(chatId, "Неизвестная команда. Используйте /start");
 
             } else {
                 log.warn("❌ Получено сообщение без текста");
