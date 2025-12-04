@@ -5,10 +5,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.CompletableFuture;
 
 @Component
 @Slf4j
@@ -76,12 +79,38 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
                 sendMessage(chatId, "Неизвестная команда. Используйте /start");
 
-            } else {
+            }
+
+            else if (update.hasMessage() && update.getMessage().hasPhoto()) {
+
+                chatId = update.getMessage().getChatId();
+                Message message = update.getMessage();
+
+                botService.handlePhoto(chatId, message);
+
+                sendMessage(chatId, "✅ Фото загружено! Номер будет распознан через 5 секунд...");
+
+                Long finalChatId = chatId;
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        Thread.sleep(5000);
+                        String number = botService.recognizeLicensePlate(null);
+                        sendMessage(finalChatId, "🔍 Распознан номер: ⎜" + number + "⎜");
+                    } catch (Exception e) {
+                        log.error("Ошибка при отправке результата OCR", e);
+                    }
+                });
+
+            }
+
+            else {
                 log.warn("❌ Получено сообщение без текста");
             }
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("❌ Ошибка при обработке сообщения", e);
+
             if (chatId != null) {
                 sendMessage(chatId, "❌ Произошла ошибка. Попробуйте позже.");
             }
