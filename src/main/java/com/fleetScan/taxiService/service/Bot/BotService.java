@@ -1,18 +1,20 @@
 package com.fleetScan.taxiService.service.Bot;
 
 import com.fleetScan.taxiService.entity.Admin.Fleet;
+import com.fleetScan.taxiService.entity.Autopark.Car.CarPhoto;
 import com.fleetScan.taxiService.entity.Autopark.Driver.Driver;
 import com.fleetScan.taxiService.repository.Admin.FleetRepository;
+import com.fleetScan.taxiService.repository.Autopark.Car.CarPhotoRepository;
 import com.fleetScan.taxiService.repository.Autopark.DriverRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.commons.lang3.ArrayUtils.startsWith;
@@ -24,6 +26,7 @@ public class BotService {
 
     private final FleetRepository fleetRepository;
     private final DriverRepository driverRepository;
+    private final CarPhotoRepository carPhotoRepository;
 
     private Map <Long, String> userStates = new ConcurrentHashMap<>();
 
@@ -156,6 +159,33 @@ public class BotService {
         driverRepository.save(driver);
 
         return String.format("🎉 Привет, %s! Отправьте фото машины.", driver.getName());
+    }
+
+    public String recognizeLicensePlate(CarPhoto carPhoto) {
+        return "А123БВ77";
+    }
+
+    public void handlePhoto(Long chatId, Message message) {
+        List<PhotoSize> photos = message.getPhoto();
+        PhotoSize photo = photos.stream()
+                .max(Comparator.comparing(PhotoSize::getFileSize))
+                .orElse(null);
+
+        if (photo == null) return;
+
+        String fileId = photo.getFileId();
+        Optional<Driver> driverOpt = driverRepository.findByChatId(chatId);
+        if (driverOpt.isEmpty()) return;
+
+        Driver driver = driverOpt.get();
+
+        CarPhoto carPhoto = new CarPhoto();
+        carPhoto.setDriver(driver);
+        carPhoto.setTelegramFileId(fileId);
+        carPhoto.setStatus("PENDING");
+        carPhotoRepository.save(carPhoto);
+
+        log.info("Фото принято от {}: file_id={}", driver.getName(), fileId);
     }
 
 }
