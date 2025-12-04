@@ -21,16 +21,20 @@ public class CarPhoto {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "driver_id")
+    @JoinColumn(name = "driver_id", nullable = false)
     private Driver driver;
 
-    @Column(name = "telegram_file_id")
+    @Column(name = "telegram_file_id", nullable = false)
     private String telegramFileId;
 
-    private String note;
+    @Column(name = "file_path")
+    private String filePath;
 
     @Column(nullable = false)
-    private String status = "PENDING";
+    private String status;
+
+    @Column(name = "note")
+    private String note;
 
     @CreationTimestamp
     @Column(name = "created_at")
