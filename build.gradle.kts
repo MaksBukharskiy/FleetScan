@@ -31,6 +31,7 @@ dependencies {
     compileOnly("org.projectlombok:lombok")
 
     implementation("org.telegram:telegrambots-spring-boot-starter:6.8.0")
+    implementation("net.sourceforge.tess4j:tess4j:5.8.0")
 
     implementation("mysql:mysql-connector-java:8.0.33")
 
