@@ -8,11 +8,15 @@ import com.fleetScan.taxiService.repository.Autopark.Car.CarPhotoRepository;
 import com.fleetScan.taxiService.repository.Autopark.DriverRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.tess4j.Tesseract;
+import net.sourceforge.tess4j.TesseractException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -161,10 +165,6 @@ public class BotService {
         return String.format("🎉 Привет, %s! Отправьте фото машины.", driver.getName());
     }
 
-    public String recognizeLicensePlate(CarPhoto carPhoto) {
-        return "А123БВ77";
-    }
-
     public void handlePhoto(Long chatId, Message message) {
         List<PhotoSize> photos = message.getPhoto();
         PhotoSize photo = photos.stream()
@@ -186,6 +186,42 @@ public class BotService {
         carPhotoRepository.save(carPhoto);
 
         log.info("Фото принято от {}: file_id={}", driver.getName(), fileId);
+    }
+
+    public String recognizeLicensePlate(java.io.File photoFile) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "tesseract",
+                    photoFile.getAbsolutePath(),
+                    "stdout",
+                    "-l", "rus"
+            );
+
+            Process process = pb.start();
+
+            StringBuilder output = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+                }
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                String result = output.toString().trim();
+                log.info("✅ OCR УСПЕШЕН: '{}'", result);
+                return result.isEmpty() ? "Номер не найден" : result;
+            } else {
+                log.error("❌ OCR завершился с ошибкой: {}", exitCode);
+                return "Ошибка выполнения";
+            }
+
+        } catch (Exception e) {
+            log.error("💥 Ошибка при вызове tesseract", e);
+            return "Не распознан";
+        }
     }
 
 }
