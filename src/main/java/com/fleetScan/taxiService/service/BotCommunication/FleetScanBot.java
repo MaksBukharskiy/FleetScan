@@ -1,17 +1,24 @@
 package com.fleetScan.taxiService.service.BotCommunication;
 
 import com.fleetScan.taxiService.service.Bot.BotService;
+import net.sourceforge.tess4j.Tesseract;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
+
+import static java.awt.SystemColor.text;
 
 @Component
 @Slf4j
@@ -38,11 +45,11 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        Long chatId = null;
+        Long chatIdForError = null;
 
         try {
             if (update.hasMessage() && update.getMessage().hasText()) {
-                chatId = update.getMessage().getChatId();
+                final Long chatId = update.getMessage().getChatId();
                 String text = update.getMessage().getText();
 
                 String state = botService.getUserState(chatId);
@@ -82,25 +89,38 @@ public class FleetScanBot extends TelegramLongPollingBot {
             }
 
             else if (update.hasMessage() && update.getMessage().hasPhoto()) {
-
-                chatId = update.getMessage().getChatId();
+                final Long chatId = update.getMessage().getChatId();
                 Message message = update.getMessage();
 
                 botService.handlePhoto(chatId, message);
+                sendMessage(chatId, "✅ Фото загружено! Идет анализ...");
 
-                sendMessage(chatId, "✅ Фото загружено! Номер будет распознан через 5 секунд...");
-
-                Long finalChatId = chatId;
                 CompletableFuture.runAsync(() -> {
                     try {
-                        Thread.sleep(5000);
-                        String number = botService.recognizeLicensePlate(null);
-                        sendMessage(finalChatId, "🔍 Распознан номер: ⎜" + number + "⎜");
+                        PhotoSize photo = message.getPhoto().stream()
+                                .max(Comparator.comparing(PhotoSize::getFileSize))
+                                .orElseThrow();
+
+                        GetFile getFileRequest = new GetFile();
+                        getFileRequest.setFileId(photo.getFileId());
+                        File telegramFile = execute(getFileRequest);
+
+
+                        java.io.File downloadedFile = downloadFile(
+                                telegramFile,
+                                new java.io.File("src/main/resources/downloads/" + chatId + ".jpg")
+                        );
+
+                        log.info("Фото скачано: {}", downloadedFile.getAbsolutePath());
+
+                        String number = botService.recognizeLicensePlate(downloadedFile);
+                        sendMessage(chatId, "🔍 Распознан номер: **" + number + "**");
+
                     } catch (Exception e) {
-                        log.error("Ошибка при отправке результата OCR", e);
+                        log.error("Ошибка при обработке фото", e);
+                        sendMessage(chatId, "❌ Не удалось распознать номер.");
                     }
                 });
-
             }
 
             else {
@@ -111,8 +131,8 @@ public class FleetScanBot extends TelegramLongPollingBot {
         catch (Exception e) {
             log.error("❌ Ошибка при обработке сообщения", e);
 
-            if (chatId != null) {
-                sendMessage(chatId, "❌ Произошла ошибка. Попробуйте позже.");
+            if (chatIdForError != null) {
+                sendMessage(chatIdForError, "❌ Произошла ошибка. Попробуйте позже.");
             }
         }
     }
