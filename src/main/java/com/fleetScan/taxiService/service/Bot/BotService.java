@@ -20,6 +20,8 @@ import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.commons.lang3.ArrayUtils.startsWith;
 
@@ -222,6 +224,20 @@ public class BotService {
             log.error("💥 Ошибка при вызове tesseract", e);
             return "Не распознан";
         }
+    }
+
+    public String extractLicensePlate(String text) {
+        String letters = "АВЕКМНОРСТУХ";
+
+        Pattern pattern = Pattern.compile("[" + letters + "] \\d{3} [" + letters + "]{2} \\d{2,3}");
+        Matcher matcher = pattern.matcher(text);
+
+        if (matcher.find()) {
+            return matcher.group(0);
+        }
+
+        log.info("номер не найден");
+        return "😭 номер не найден,\n попробуйте заново";
     }
 
 }
