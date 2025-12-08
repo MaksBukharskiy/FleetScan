@@ -113,8 +113,10 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
                         log.info("Фото скачано: {}", downloadedFile.getAbsolutePath());
 
-                        String number = botService.recognizeLicensePlate(downloadedFile);
-                        sendMessage(chatId, "🔍 Распознан номер: **" + number + "**");
+                        String rawText = botService.recognizeLicensePlate(downloadedFile);
+                        String originalTest =botService.extractLicensePlate(rawText);
+
+                        sendMessage(chatId, "🔍 Распознан номер: **" + originalTest + "**");
 
                     } catch (Exception e) {
                         log.error("Ошибка при обработке фото", e);
@@ -139,6 +141,7 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
     public void sendMessage(Long chatId, String text) {
         SendMessage message = new SendMessage();
+
         message.setChatId(chatId.toString());
         message.setText(text);
 
