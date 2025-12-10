@@ -213,10 +213,10 @@ public class BotService {
             int exitCode = process.waitFor();
             if (exitCode == 0) {
                 String result = output.toString().trim();
-                log.info("✅ OCR УСПЕШЕН: '{}'", result);
+                log.info("✅ OCR УСПЕШЕН: '{}'", result); // ← Вот это добавь
                 return result.isEmpty() ? "Номер не найден" : result;
             } else {
-                log.error("❌ OCR завершился с ошибкой: {}", exitCode);
+                log.error("❌ OCR завершился с ошибкой: {}", exitCode); // ← И это
                 return "Ошибка выполнения";
             }
 
@@ -227,16 +227,22 @@ public class BotService {
     }
 
     public String extractLicensePlate(String text) {
-        String letters = "АВЕКМНОРСТУХ";
+        log.info("🔍 Входной текст для поиска номера: '{}'", text);
 
-        Pattern pattern = Pattern.compile("[" + letters + "] \\d{3} [" + letters + "]{2} \\d{2,3}");
+        text = text.replaceAll("[^АВЕКМНОРСТУХавекмнорстух\\d\\s]", "").toUpperCase();
+        log.info("🧹 Очищенный текст: '{}'", text);
+
+        String letters = "АВЕКМНОРСТУХ";
+        Pattern pattern = Pattern.compile("[" + letters + "]\\d{3}[" + letters + "]{2}\\d{2,3}");
         Matcher matcher = pattern.matcher(text);
 
         if (matcher.find()) {
-            return matcher.group(0);
+            String result = matcher.group(0);
+            log.info("✅ Найден номер: '{}'", result);
+            return result;
         }
 
-        log.info("номер не найден");
+        log.info("❌ Номер не найден в тексте");
         return "😭 номер не найден,\n попробуйте заново";
     }
 
