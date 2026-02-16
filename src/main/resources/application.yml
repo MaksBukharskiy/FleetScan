@@ -1,18 +1,18 @@
 spring:
-  application:
-    name: taxiService
   datasource:
-    url: jdbc:mysql://localhost:3306/fleetscan
+    url: jdbc:mysql://127.0.0.1:3306/fleetscan?serverTimezone=UTC&useSSL=false
     username: taxiuser
     password: taxi123
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
+
 logging:
   level:
     org.hibernate: DEBUG
-    com.fleetscan: DEBUG
+    com.fleetScan: DEBUG
+
 telegram:
   bot:
     token: "8219016516:AAET9RoCVdiVG1ymoA60h5I49HaHx_yVsS8"

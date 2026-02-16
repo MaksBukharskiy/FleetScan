@@ -1,22 +1,15 @@
 plugins {
     java
-    id("org.springframework.boot") version "4.0.0"
-    id("io.spring.dependency-management") version "1.1.7"
+    id("org.springframework.boot") version "3.3.5"
+    id("io.spring.dependency-management") version "1.1.5"
 }
 
 group = "com.fleetScan"
 version = "0.0.1-SNAPSHOT"
-description = "Fleet Scan - Demo project for Spring Boot "
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-}
-
-configurations {
-    compileOnly {
-        extendsFrom(configurations.annotationProcessor.get())
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -25,24 +18,24 @@ repositories {
 }
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa") {
+        exclude(group = "com.fasterxml.jackson.module", module = "jackson-module-jaxb-annotations")
+    }
 
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-webmvc")
-    compileOnly("org.projectlombok:lombok")
+    runtimeOnly("com.mysql:mysql-connector-j:9.3.0")
 
-    implementation("org.telegram:telegrambots-spring-boot-starter:6.8.0")
+    implementation("org.telegram:telegrambots-spring-boot-starter:6.8.0") {
+        exclude(group = "com.fasterxml.jackson.module", module = "jackson-module-jaxb-annotations")
+    }
+
     implementation("net.sourceforge.tess4j:tess4j:5.8.0")
 
-    implementation("mysql:mysql-connector-java:8.0.33")
-
+    compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
 
-    testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
-    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude(group = "com.fasterxml.jackson.module", module = "jackson-module-jaxb-annotations")
+    }
 }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-}

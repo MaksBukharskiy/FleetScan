@@ -8,9 +8,6 @@ import com.fleetScan.taxiService.repository.Autopark.Car.CarPhotoRepository;
 import com.fleetScan.taxiService.repository.Autopark.DriverRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.PhotoSize;
@@ -18,12 +15,9 @@ import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.apache.commons.lang3.ArrayUtils.startsWith;
 
 @Service
 @Slf4j
@@ -159,7 +153,7 @@ public class BotService {
         }
 
         Driver driver = driverOpt.get();
-        if(driver.getChatId() != null) return "ℹ\uFE0F Вы уже зарегистрированы.";
+        if(driver.getChatId() != null) return "ℹ️ Вы уже зарегистрированы.";
 
         driver.setChatId(chatId);
         driverRepository.save(driver);
@@ -213,10 +207,10 @@ public class BotService {
             int exitCode = process.waitFor();
             if (exitCode == 0) {
                 String result = output.toString().trim();
-                log.info("✅ OCR УСПЕШЕН: '{}'", result); // ← Вот это добавь
+                log.info("✅ OCR УСПЕШЕН: '{}'", result);
                 return result.isEmpty() ? "Номер не найден" : result;
             } else {
-                log.error("❌ OCR завершился с ошибкой: {}", exitCode); // ← И это
+                log.error("❌ OCR завершился с ошибкой: {}", exitCode);
                 return "Ошибка выполнения";
             }
 
