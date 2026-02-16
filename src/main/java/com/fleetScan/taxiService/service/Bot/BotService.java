@@ -28,7 +28,7 @@ public class BotService {
     private final DriverRepository driverRepository;
     private final CarPhotoRepository carPhotoRepository;
 
-    private Map <Long, String> userStates = new ConcurrentHashMap<>();
+    private final Map <Long, String> userStates = new ConcurrentHashMap<>();
 
     public String getUserState(Long chatId) {
         return userStates.get(chatId);
@@ -39,7 +39,7 @@ public class BotService {
 
     public String handleMessage(Long chatId, String message) {
 
-        if(message == null || message.isEmpty() || message.isBlank()) return "❌ Пустое сообщение.";
+        if(message == null || message.isBlank()) return "❌ Пустое сообщение.";
 
         log.info("Получено от {}: {}", chatId, message);
 
