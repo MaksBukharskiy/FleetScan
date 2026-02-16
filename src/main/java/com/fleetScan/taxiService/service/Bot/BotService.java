@@ -146,20 +146,32 @@ public class BotService {
     }
 
     public String handleInviteLink(Long chatId, String inviteCode) {
+
         var driverOpt = driverRepository.findByInviteCode(inviteCode);
 
-        if(driverOpt.isEmpty()){
+        if (driverOpt.isEmpty()) {
             return "❌ Неверная ссылка.";
         }
 
+        Optional<Driver> existingDriver = driverRepository.findByChatId(chatId);
+
+        if (existingDriver.isPresent()) {
+            return "ℹ️ Этот Telegram уже зарегистрирован.";
+        }
+
         Driver driver = driverOpt.get();
-        if(driver.getChatId() != null) return "ℹ️ Вы уже зарегистрированы.";
+
+        if (driver.getChatId() != null) {
+            return "ℹ️ Вы уже зарегистрированы.";
+        }
 
         driver.setChatId(chatId);
+        driver.setIsActive(true);
         driverRepository.save(driver);
 
         return String.format("🎉 Привет, %s! Отправьте фото машины.", driver.getName());
     }
+
 
     public void handlePhoto(Long chatId, Message message) {
         List<PhotoSize> photos = message.getPhoto();
