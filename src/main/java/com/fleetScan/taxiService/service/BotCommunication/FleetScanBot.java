@@ -1,7 +1,9 @@
 package com.fleetScan.taxiService.service.BotCommunication;
 
 import com.fleetScan.taxiService.service.Bot.BotService;
+import com.fleetScan.taxiService.service.FleetAiService;
 import net.sourceforge.tess4j.Tesseract;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Comparator;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static java.awt.SystemColor.text;
@@ -113,10 +116,9 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
                         log.info("Фото скачано: {}", downloadedFile.getAbsolutePath());
 
-                        String rawText = botService.recognizeLicensePlate(downloadedFile);
-                        String originalTest =botService.extractLicensePlate(rawText);
+                        byte[] photoBytes = java.nio.file.Files.readAllBytes(downloadedFile.toPath());
 
-                        sendMessage(chatId, "🔍 Распознан номер: **" + originalTest + "**");
+                        handleCarPhoto(chatId, photoBytes, downloadedFile.getName());
 
                     } catch (Exception e) {
                         log.error("Ошибка при обработке фото", e);
@@ -149,6 +151,23 @@ public class FleetScanBot extends TelegramLongPollingBot {
             execute(message);
         } catch (TelegramApiException e) {
             log.error("❌ Ошибка отправки сообщения", e);
+        }
+    }
+
+    @Autowired
+    private FleetAiService fleetAiService;
+
+    public void handleCarPhoto(Long chatId, byte[] photoBytes, String filename) {
+        try {
+            Map<String, String> result = fleetAiService.analyzeCar(photoBytes, filename);
+
+            String carType = result.getOrDefault("car_type", "Unknown");
+            String plate = result.getOrDefault("license_plate", "Unknown");
+
+            sendMessage(chatId, "🚗 Авто: " + carType + "\n🔢 Номер: " + plate);
+        } catch (Exception e) {
+            sendMessage(chatId, "❌ Ошибка при анализе фото.");
+            e.printStackTrace();
         }
     }
 }
