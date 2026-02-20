@@ -19,13 +19,9 @@ public class NotificationsService {
     private final DriverRepository driverRepository;
     private final CarPhotoRepository carPhotoRepository;
     private final FleetScanBot fleetScanBot;
-    private final Driver driver;
 
     @Scheduled(cron = "0 0 12 * * *")
     public void remindDriver(){
-        if (driver.getChatId() != null) {
-            fleetScanBot.sendMessage(driver.getChatId(), "🔔 ...");
-        }
 
         log.info("⏰ Запуск ежечасного уведомления водителей");
 

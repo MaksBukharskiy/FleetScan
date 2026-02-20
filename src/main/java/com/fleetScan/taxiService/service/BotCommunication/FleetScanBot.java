@@ -2,7 +2,8 @@ package com.fleetScan.taxiService.service.BotCommunication;
 
 import com.fleetScan.taxiService.service.Bot.BotService;
 import com.fleetScan.taxiService.service.FleetAiService;
-import net.sourceforge.tess4j.Tesseract;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,14 +15,12 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-
-import static java.awt.SystemColor.text;
 
 @Component
 @Slf4j
@@ -29,6 +28,9 @@ import static java.awt.SystemColor.text;
 public class FleetScanBot extends TelegramLongPollingBot {
 
     private final BotService botService;
+
+    @Autowired
+    private FleetAiService fleetAiService;
 
     @Value("${telegram.bot.token}")
     private String botToken;
@@ -48,102 +50,122 @@ public class FleetScanBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        Long chatIdForError = null;
 
         try {
+
             if (update.hasMessage() && update.getMessage().hasText()) {
-                final Long chatId = update.getMessage().getChatId();
-                String text = update.getMessage().getText();
-
-                String state = botService.getUserState(chatId);
-
-                if ("AWAITING_FLEET_NAME".equals(state)) {
-                    String response = botService.createNewFleet(chatId, text);
-                    sendMessage(chatId, response);
-                    return;
-                }
-
-                if ("AWAITING_DRIVER_NAME".equals(state)) {
-                    String response = botService.addNewDriver(chatId, text);
-                    sendMessage(chatId, response);
-                    return;
-                }
-
-                if (text.startsWith("/start")) {
-                    String[] parts = text.split(" ", 2);
-                    if (parts.length > 1) {
-                        String response = botService.handleInviteLink(chatId, parts[1]);
-                        sendMessage(chatId, response);
-                    } else {
-                        String response = botService.handleStartCommand(chatId);
-                        sendMessage(chatId, response);
-                    }
-                    return;
-                }
-
-                if ("/add_driver".equals(text)) {
-                    String response = botService.startToAddDriver(chatId);
-                    sendMessage(chatId, response);
-                    return;
-                }
-
-                sendMessage(chatId, "Неизвестная команда. Используйте /start");
-
+                handleText(update);
+                return;
             }
 
-            else if (update.hasMessage() && update.getMessage().hasPhoto()) {
-                final Long chatId = update.getMessage().getChatId();
-                Message message = update.getMessage();
-
-                botService.handlePhoto(chatId, message);
-                sendMessage(chatId, "✅ Фото загружено! Идет анализ...");
-
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        PhotoSize photo = message.getPhoto().stream()
-                                .max(Comparator.comparing(PhotoSize::getFileSize))
-                                .orElseThrow();
-
-                        GetFile getFileRequest = new GetFile();
-                        getFileRequest.setFileId(photo.getFileId());
-                        File telegramFile = execute(getFileRequest);
-
-
-                        java.io.File downloadedFile = downloadFile(
-                                telegramFile,
-                                new java.io.File("src/main/resources/downloads/" + chatId + ".jpg")
-                        );
-
-                        log.info("Фото скачано: {}", downloadedFile.getAbsolutePath());
-
-                        byte[] photoBytes = java.nio.file.Files.readAllBytes(downloadedFile.toPath());
-
-                        handleCarPhoto(chatId, photoBytes, downloadedFile.getName());
-
-                    } catch (Exception e) {
-                        log.error("Ошибка при обработке фото", e);
-                        sendMessage(chatId, "❌ Не удалось распознать номер.");
-                    }
-                });
+            if (update.hasMessage() && update.getMessage().hasPhoto()) {
+                handlePhoto(update);
+                return;
             }
 
-            else {
-                log.warn("❌ Получено сообщение без текста");
-            }
-
+        } catch (Exception e) {
+            log.error("❌ Ошибка обработки update", e);
         }
-        catch (Exception e) {
-            log.error("❌ Ошибка при обработке сообщения", e);
+    }
 
-            if (chatIdForError != null) {
-                sendMessage(chatIdForError, "❌ Произошла ошибка. Попробуйте позже.");
+    private void handleText(Update update) {
+        Long chatId = update.getMessage().getChatId();
+        String text = update.getMessage().getText();
+
+        String state = botService.getUserState(chatId);
+
+        if ("AWAITING_FLEET_NAME".equals(state)) {
+            sendMessage(chatId, botService.createNewFleet(chatId, text));
+            return;
+        }
+
+        if ("AWAITING_DRIVER_NAME".equals(state)) {
+            sendMessage(chatId, botService.addNewDriver(chatId, text));
+            return;
+        }
+
+        if (text.startsWith("/start")) {
+            String[] parts = text.split(" ", 2);
+
+            if (parts.length > 1) {
+                sendMessage(chatId, botService.handleInviteLink(chatId, parts[1]));
+            } else {
+                sendMessage(chatId, botService.handleStartCommand(chatId));
             }
+            return;
+        }
+
+        if ("/add_driver".equals(text)) {
+            sendMessage(chatId, botService.startToAddDriver(chatId));
+            return;
+        }
+
+        sendMessage(chatId, "Неизвестная команда. Используйте /start");
+    }
+
+    private void handlePhoto(Update update) {
+
+        Long chatId = update.getMessage().getChatId();
+        Message message = update.getMessage();
+
+        botService.handlePhoto(chatId, message);
+        sendMessage(chatId, "📸 Фото получено. Идёт анализ...");
+
+        CompletableFuture.runAsync(() -> {
+            try {
+
+                PhotoSize photo = message.getPhoto().stream()
+                        .max(Comparator.comparing(PhotoSize::getFileSize))
+                        .orElseThrow();
+
+                GetFile getFileRequest = new GetFile(photo.getFileId());
+                File telegramFile = execute(getFileRequest);
+
+                java.io.File downloadedFile = downloadFile(
+                        telegramFile,
+                        new java.io.File("src/main/resources/downloads/" + chatId + ".jpg")
+                );
+
+                log.info("Фото скачано: {}", downloadedFile.getAbsolutePath());
+
+                String rawText = botService.recognizeLicensePlate(downloadedFile);
+                String extractedPlate = botService.extractLicensePlate(rawText);
+                log.info("📋 OCR (локально, только лог): {}", extractedPlate);
+
+                byte[] photoBytes = Files.readAllBytes(downloadedFile.toPath());
+
+                handleCarPhoto(chatId, photoBytes, downloadedFile.getName());
+
+            } catch (Exception e) {
+                log.error("❌ Ошибка обработки фото", e);
+                sendMessage(chatId, "❌ Ошибка анализа фото.");
+            }
+        });
+    }
+
+    private void handleCarPhoto(Long chatId, byte[] photoBytes, String filename) {
+
+        try {
+
+            Map<String, String> result =
+                    fleetAiService.analyzeCar(photoBytes, filename);
+
+            String carType = result.getOrDefault("car_type", "Unknown");
+            String plate = result.getOrDefault("license_plate", "Unknown");
+
+            sendMessage(chatId,
+                    "🚗 Тип авто: " + carType +
+                            "\n🔢 Номер: " + plate +
+                            "\n\n✅ Фото обработано.");
+
+        } catch (Exception e) {
+            log.error("❌ Ошибка при вызове Python AI", e);
+            sendMessage(chatId, "❌ Ошибка при анализе фото.");
         }
     }
 
     public void sendMessage(Long chatId, String text) {
         SendMessage message = new SendMessage();
-
         message.setChatId(chatId.toString());
         message.setText(text);
 
@@ -151,23 +173,6 @@ public class FleetScanBot extends TelegramLongPollingBot {
             execute(message);
         } catch (TelegramApiException e) {
             log.error("❌ Ошибка отправки сообщения", e);
-        }
-    }
-
-    @Autowired
-    private FleetAiService fleetAiService;
-
-    public void handleCarPhoto(Long chatId, byte[] photoBytes, String filename) {
-        try {
-            Map<String, String> result = fleetAiService.analyzeCar(photoBytes, filename);
-
-            String carType = result.getOrDefault("car_type", "Unknown");
-            String plate = result.getOrDefault("license_plate", "Unknown");
-
-            sendMessage(chatId, "🚗 Авто: " + carType + "\n🔢 Номер: " + plate);
-        } catch (Exception e) {
-            sendMessage(chatId, "❌ Ошибка при анализе фото.");
-            e.printStackTrace();
         }
     }
 }
