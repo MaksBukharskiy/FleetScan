@@ -30,6 +30,7 @@ dependencies {
     }
 
     implementation("net.sourceforge.tess4j:tess4j:5.8.0")
+    implementation ("org.springframework.boot:spring-boot-starter-webflux")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
