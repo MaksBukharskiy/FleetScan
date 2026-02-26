@@ -1,15 +1,16 @@
-package com.fleetScan.taxiService.service.Notification;
+package com.fleetScan.taxiService.service.notification;
 
-import com.fleetScan.taxiService.entity.Autopark.Driver.Driver;
-import com.fleetScan.taxiService.repository.Autopark.Car.CarPhotoRepository;
-import com.fleetScan.taxiService.repository.Autopark.DriverRepository;
-import com.fleetScan.taxiService.service.BotCommunication.FleetScanBot;
+import com.fleetScan.taxiService.domain.autopark.driver.Driver;
+import com.fleetScan.taxiService.domain.autopark.driver.UserRole;
+import com.fleetScan.taxiService.domain.autopark.vehicle.DetectedVehicle;
+import com.fleetScan.taxiService.repository.autopark.DriverRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -17,22 +18,34 @@ import java.util.List;
 public class NotificationsService {
 
     private final DriverRepository driverRepository;
-    private final CarPhotoRepository carPhotoRepository;
-    private final FleetScanBot fleetScanBot;
 
-    @Scheduled(cron = "0 0 12 * * *")
-    public void remindDriver(){
-
-        log.info("⏰ Запуск ежечасного уведомления водителей");
-
-        List<Driver> actualDriver = driverRepository.findAll();
-
-        for(Driver driver : actualDriver){
-            fleetScanBot.sendMessage(driver.getChatId(), "\uD83D\uDD14 Привет! Пожалуйста, отправьте фото вашей машины для отчёта за сегодня.;\n");
-            log.info("Отправлено уведомление водителю: {}", driver.getName());
+    public List<Long> resolveSecurityRecipients(Long sourceChatId) {
+        Driver source = driverRepository.findByChatIdAndIsActiveTrue(sourceChatId).orElse(null);
+        if (source == null || source.getFleet() == null) {
+            return List.of();
         }
-
+        return driverRepository
+                .findAllByFleetIdAndRoleInAndIsActiveTrue(
+                        source.getFleet().getId(),
+                        List.of(UserRole.ADMIN, UserRole.OPERATOR)
+                )
+                .stream()
+                .map(Driver::getChatId)
+                .filter(chatId -> chatId != null)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
+    public String buildSecurityMessage(DetectedVehicle vehicle) {
+        return "🚨 Security event\n" +
+                "Plate: " + vehicle.getPlateNumber() + "\n" +
+                "Status: " + vehicle.getStatus() + "\n" +
+                "Reason: " + vehicle.getDecisionReason() + "\n" +
+                "Detected at: " + vehicle.getDetectedAt();
+    }
 
+    @Scheduled(cron = "0 0 12 * * *")
+    public void remindDriver() {
+        log.info("⏰ Запуск ежедневной проверки напоминаний");
+    }
 }
