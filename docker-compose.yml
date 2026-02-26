@@ -25,6 +25,9 @@ services:
 
       SPRING_DATASOURCE_USERNAME: taxiuser
       SPRING_DATASOURCE_PASSWORD: taxi123
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_BOT_NAME: ${TELEGRAM_BOT_NAME:-fleetScanBot}
+      FLEETSCAN_AI_BASE_URL: ${FLEETSCAN_AI_BASE_URL:-http://host.docker.internal:8000}
 
 
     restart: unless-stopped

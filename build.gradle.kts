@@ -24,6 +24,9 @@ dependencies {
     }
 
     runtimeOnly("com.mysql:mysql-connector-j:9.3.0")
+    runtimeOnly("com.h2database:h2")
+    implementation("javax.xml.bind:jaxb-api:2.3.1")
+    runtimeOnly("com.sun.xml.bind:jaxb-impl:2.3.9")
 
     implementation("org.telegram:telegrambots-spring-boot-starter:6.8.0") {
         exclude(group = "com.fasterxml.jackson.module", module = "jackson-module-jaxb-annotations")
@@ -38,5 +41,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "com.fasterxml.jackson.module", module = "jackson-module-jaxb-annotations")
     }
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("com.h2database:h2")
 }
 
+tasks.test {
+    useJUnitPlatform()
+}

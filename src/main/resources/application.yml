@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/fleetscan?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: taxiuser
-    password: taxi123
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/fleetscan?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:taxiuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:taxi123}
   jpa:
     hibernate:
       ddl-auto: update
@@ -19,5 +19,10 @@ logging:
 
 telegram:
   bot:
-    token: "8219016516:AAET9RoCVdiVG1ymoA60h5I49HaHx_yVsS8"
-    name: "fleetScanBot"
+    token: ${TELEGRAM_BOT_TOKEN:}
+    name: ${TELEGRAM_BOT_NAME:fleetScanBot}
+
+fleetscan:
+  ai:
+    base-url: ${FLEETSCAN_AI_BASE_URL:http://localhost:8000}
+    min-confidence: ${FLEETSCAN_AI_MIN_CONFIDENCE:0.80}
