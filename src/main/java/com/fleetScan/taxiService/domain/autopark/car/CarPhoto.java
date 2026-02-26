@@ -1,0 +1,43 @@
+package com.fleetScan.taxiService.domain.autopark.car;
+
+import com.fleetScan.taxiService.domain.autopark.driver.Driver;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Data
+@Table(name = "car_photo")
+@NoArgsConstructor
+@AllArgsConstructor
+public class CarPhoto {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "driver_id", nullable = false)
+    private Driver driver;
+
+    @Column(name = "telegram_file_id", nullable = false)
+    private String telegramFileId;
+
+    @Column(name = "file_path")
+    private String filePath;
+
+    @Column(nullable = false)
+    private String status;
+
+    @Column(name = "note")
+    private String note;
+
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+}
