@@ -1,6 +1,6 @@
-package com.fleetScan.taxiService.repository.Admin;
+package com.fleetScan.taxiService.repository.admin;
 
-import com.fleetScan.taxiService.entity.Admin.Fleet;
+import com.fleetScan.taxiService.domain.admin.Fleet;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
