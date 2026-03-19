@@ -41,6 +41,12 @@ public class Driver {
     @Column(name = "role", nullable = false, length = 16)
     private UserRole role = UserRole.OPERATOR;
 
+    @Column(name = "vehicle_plate", length = 16)
+    private String vehiclePlate;
+
+    @Column(name = "vehicle_model", length = 128)
+    private String vehicleModel;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

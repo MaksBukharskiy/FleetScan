@@ -30,6 +30,10 @@ public class CarPhoto {
     @Column(name = "file_path")
     private String filePath;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "photo_type", nullable = false)
+    private PhotoType photoType = PhotoType.OTHER;
+
     @Column(nullable = false)
     private String status;
 

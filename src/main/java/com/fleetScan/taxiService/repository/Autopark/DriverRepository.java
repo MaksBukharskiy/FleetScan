@@ -14,6 +14,7 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
     Optional<Driver> findByInviteCode(String inviteCode);
     List<Driver> findAllByFleetId(Long fleetId);
     List<Driver> findAllByFleetIdAndRoleInAndIsActiveTrue(Long fleetId, List<UserRole> roles);
+    List<Driver> findAllByRoleInAndIsActiveTrue(List<UserRole> roles);
     Optional<Driver> findByFleetIdAndName(Long fleetId, String name);
 
 }
