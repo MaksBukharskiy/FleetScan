@@ -2,6 +2,7 @@ package com.fleetScan.taxiService.service.bot;
 
 import com.fleetScan.taxiService.domain.admin.Fleet;
 import com.fleetScan.taxiService.domain.autopark.car.CarPhoto;
+import com.fleetScan.taxiService.domain.autopark.car.PhotoType;
 import com.fleetScan.taxiService.domain.autopark.driver.Driver;
 import com.fleetScan.taxiService.domain.autopark.driver.UserRole;
 import com.fleetScan.taxiService.repository.admin.FleetRepository;
@@ -29,6 +30,9 @@ public class BotService {
 
     private static final String AWAITING_FLEET_NAME = "AWAITING_FLEET_NAME";
     private static final String AWAITING_USER_NAME = "AWAITING_USER_NAME";
+    private static final String AWAITING_PHOTO_TYPE = "AWAITING_PHOTO_TYPE";
+    private static final String AWAITING_VEHICLE_PLATE = "AWAITING_VEHICLE_PLATE";
+    private static final String AWAITING_VEHICLE_MODEL = "AWAITING_VEHICLE_MODEL";
 
     private final FleetRepository fleetRepository;
     private final DriverRepository driverRepository;
@@ -38,6 +42,8 @@ public class BotService {
 
     private final Map<Long, String> userStates = new ConcurrentHashMap<>();
     private final Map<Long, UserRole> pendingRoleByChatId = new ConcurrentHashMap<>();
+    private final Map<Long, List<PhotoSize>> pendingPhotosByChatId = new ConcurrentHashMap<>();
+    private final Map<Long, Driver> pendingDriversByChatId = new ConcurrentHashMap<>();
 
     public String getUserState(Long chatId) {
         return userStates.get(chatId);
@@ -55,6 +61,15 @@ public class BotService {
         if (AWAITING_USER_NAME.equals(state)) {
             return addNewUser(chatId, text);
         }
+        if (AWAITING_PHOTO_TYPE.equals(state)) {
+            return handlePhotoTypeSelection(chatId, text);
+        }
+        if (AWAITING_VEHICLE_PLATE.equals(state)) {
+            return handleVehiclePlateInput(chatId, text);
+        }
+        if (AWAITING_VEHICLE_MODEL.equals(state)) {
+            return handleVehicleModelInput(chatId, text);
+        }
 
         if (text.startsWith("/start")) {
             String[] parts = text.split(" ", 2);
@@ -70,6 +85,12 @@ public class BotService {
         }
         if ("/add_observer".equals(text)) {
             return startToAddUser(chatId, UserRole.OBSERVER);
+        }
+        if ("/photo".equals(text)) {
+            return startPhotoSubmission(chatId);
+        }
+        if ("/register_car".equals(text)) {
+            return startCarRegistration(chatId);
         }
         if (text.startsWith("/blacklist_add")) {
             return handleBlackListAdd(chatId, text);
@@ -182,7 +203,12 @@ public class BotService {
         user.setChatId(chatId);
         user.setIsActive(true);
         driverRepository.save(user);
-        return "🎉 Регистрация завершена. Ваша роль: " + user.getRole() + "\n" + help(chatId);
+
+        userStates.put(chatId, AWAITING_VEHICLE_PLATE);
+        pendingDriversByChatId.put(chatId, user);
+        
+        return "🎉 Регистрация завершена. Ваша роль: " + user.getRole() + 
+               "\n\n🚗 Теперь зарегистрируйте ваш автомобиль.\nВведите номер автомобиля (например, А123БВ777):";
     }
 
     public void handlePhoto(Long chatId, Message message) {
@@ -195,11 +221,129 @@ public class BotService {
             return;
         }
 
+        String state = userStates.get(chatId);
+        if (AWAITING_PHOTO_TYPE.equals(state)) {
+            pendingPhotosByChatId.put(chatId, photos);
+            return;
+        }
+
         CarPhoto carPhoto = new CarPhoto();
         carPhoto.setDriver(user);
         carPhoto.setTelegramFileId(photo.getFileId());
+        carPhoto.setPhotoType(PhotoType.OTHER);
         carPhoto.setStatus("PENDING");
         carPhotoRepository.save(carPhoto);
+    }
+
+    public String startPhotoSubmission(Long chatId) {
+        Driver user = accessService.requireUser(chatId, UserRole.ADMIN, UserRole.OPERATOR);
+        userStates.put(chatId, AWAITING_PHOTO_TYPE);
+        return """
+                📸 Отправка фото автомобиля
+                
+                Выберите тип фото:
+                1️⃣ - Передняя часть
+                2️⃣ - Задняя часть
+                3️⃣ - Салон
+                4️⃣ - Приборная панель
+                
+                Или отправьте фото сразу, а затем укажите тип.
+                """;
+    }
+
+    public String handlePhotoTypeSelection(Long chatId, String text) {
+        List<PhotoSize> photos = pendingPhotosByChatId.get(chatId);
+        if (photos == null || photos.isEmpty()) {
+            return "⚠️ Сначала отправьте фото автомобиля.";
+        }
+
+        PhotoType selectedType;
+        switch (text.trim()) {
+            case "1", "1️⃣" -> selectedType = PhotoType.FRONT;
+            case "2", "2️⃣" -> selectedType = PhotoType.REAR;
+            case "3", "3️⃣" -> selectedType = PhotoType.INTERIOR;
+            case "4", "4️⃣" -> selectedType = PhotoType.DASHBOARD;
+            default -> {
+                selectedType = PhotoType.fromDescription(text);
+                if (selectedType == PhotoType.OTHER) {
+                    return "❌ Неверный выбор. Введите число 1-4 или название типа фото.";
+                }
+            }
+        }
+
+        Driver user = accessService.requireUser(chatId, UserRole.ADMIN, UserRole.OPERATOR);
+        PhotoSize photo = photos.stream()
+                .max(Comparator.comparing(PhotoSize::getFileSize))
+                .orElseThrow();
+
+        CarPhoto carPhoto = new CarPhoto();
+        carPhoto.setDriver(user);
+        carPhoto.setTelegramFileId(photo.getFileId());
+        carPhoto.setPhotoType(selectedType);
+        carPhoto.setStatus("PENDING");
+        carPhotoRepository.save(carPhoto);
+
+        userStates.remove(chatId);
+        pendingPhotosByChatId.remove(chatId);
+
+        return "✅ Фото сохранено как: " + selectedType.getDescription();
+    }
+
+    public String startCarRegistration(Long chatId) {
+        Driver user = accessService.requireUser(chatId, UserRole.ADMIN, UserRole.OPERATOR);
+        if (user.getVehiclePlate() != null && !user.getVehiclePlate().isBlank()) {
+            return "ℹ️ Ваш автомобиль уже зарегистрирован: " + user.getVehiclePlate() + 
+                   "\nДля изменения используйте /register_car";
+        }
+        userStates.put(chatId, AWAITING_VEHICLE_PLATE);
+        pendingDriversByChatId.put(chatId, user);
+        return "🚗 Введите номер автомобиля (например, А123БВ777):";
+    }
+
+    public String handleVehiclePlateInput(Long chatId, String text) {
+        Driver user = pendingDriversByChatId.get(chatId);
+        if (user == null) {
+            user = driverRepository.findByChatId(chatId).orElse(null);
+            if (user == null) {
+                userStates.remove(chatId);
+                return "❌ Пользователь не найден. Начните регистрацию заново.";
+            }
+        }
+
+        String plate = text.trim().toUpperCase();
+        if (plate.length() < 5 || plate.length() > 16) {
+            return "❌ Неверный формат номера. Введите номер в формате А123БВ777:";
+        }
+
+        user.setVehiclePlate(plate);
+        pendingDriversByChatId.put(chatId, user);
+        userStates.put(chatId, AWAITING_VEHICLE_MODEL);
+
+        return "✅ Номер принят: " + plate + 
+               "\n\n🚗 Введите модель автомобиля (например, Kia K5, Hyundai Solaris):";
+    }
+
+    public String handleVehicleModelInput(Long chatId, String text) {
+        Driver user = pendingDriversByChatId.get(chatId);
+        if (user == null) {
+            userStates.remove(chatId);
+            return "❌ Сессия истекла. Используйте /register_car для начала регистрации.";
+        }
+
+        String model = text.trim();
+        if (model.length() < 2) {
+            return "❌ Слишком короткое название модели.";
+        }
+
+        user.setVehicleModel(model);
+        driverRepository.save(user);
+
+        userStates.remove(chatId);
+        pendingDriversByChatId.remove(chatId);
+
+        return "✅ Автомобиль зарегистрирован!\n" +
+               "🚗 Номер: " + user.getVehiclePlate() + "\n" +
+               "🚗 Модель: " + user.getVehicleModel();
     }
 
     private String handleBlackListAdd(Long chatId, String text) {
@@ -229,7 +373,21 @@ public class BotService {
 
     private String whoAmI(Long chatId) {
         return driverRepository.findByChatId(chatId)
-                .map(driver -> "👤 " + driver.getName() + "\nРоль: " + driver.getRole() + "\nАктивен: " + driver.getIsActive())
+                .map(driver -> {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("👤 ").append(driver.getName())
+                      .append("\nРоль: ").append(driver.getRole())
+                      .append("\nАктивен: ").append(driver.getIsActive());
+                    
+                    if (driver.getVehiclePlate() != null) {
+                        sb.append("\n🚗 Номер: ").append(driver.getVehiclePlate());
+                    }
+                    if (driver.getVehicleModel() != null) {
+                        sb.append("\n🚗 Модель: ").append(driver.getVehicleModel());
+                    }
+                    
+                    return sb.toString();
+                })
                 .orElse("❌ Пользователь не зарегистрирован.");
     }
 
@@ -243,6 +401,8 @@ public class BotService {
                     Команды:
                     /add_driver
                     /add_observer
+                    /photo - Отправить фото авто
+                    /register_car - Зарегистрировать автомобиль
                     /blacklist_add <номер> [причина]
                     /blacklist_remove <номер>
                     /status <номер>
@@ -252,11 +412,14 @@ public class BotService {
         if (role == UserRole.OPERATOR) {
             return """
                     Команды:
-                    Отправьте фото авто
+                    /photo - Отправить фото авто
+                    /register_car - Зарегистрировать автомобиль
                     /blacklist_add <номер> [причина]
                     /blacklist_remove <номер>
                     /status <номер>
                     /whoami
+                    
+                    Или просто отправьте фото автомобиля.
                     """;
         }
         return """
