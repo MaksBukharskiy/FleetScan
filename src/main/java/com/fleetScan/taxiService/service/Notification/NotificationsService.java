@@ -5,15 +5,12 @@ import com.fleetScan.taxiService.domain.autopark.driver.UserRole;
 import com.fleetScan.taxiService.domain.autopark.vehicle.DetectedVehicle;
 import com.fleetScan.taxiService.repository.autopark.DriverRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class NotificationsService {
 
@@ -27,7 +24,7 @@ public class NotificationsService {
         return driverRepository
                 .findAllByFleetIdAndRoleInAndIsActiveTrue(
                         source.getFleet().getId(),
-                        List.of(UserRole.ADMIN, UserRole.OPERATOR)
+                        List.of(UserRole.ADMIN)
                 )
                 .stream()
                 .map(Driver::getChatId)
@@ -37,15 +34,17 @@ public class NotificationsService {
     }
 
     public String buildSecurityMessage(DetectedVehicle vehicle) {
-        return "🚨 Security event\n" +
-                "Plate: " + vehicle.getPlateNumber() + "\n" +
-                "Status: " + vehicle.getStatus() + "\n" +
-                "Reason: " + vehicle.getDecisionReason() + "\n" +
-                "Detected at: " + vehicle.getDetectedAt();
-    }
-
-    @Scheduled(cron = "0 0 12 * * *")
-    public void remindDriver() {
-        log.info("⏰ Запуск ежедневной проверки напоминаний");
+        StringBuilder sb = new StringBuilder();
+        sb.append("🚨 Security event\n");
+        sb.append("Plate: ").append(vehicle.getPlateNumber()).append("\n");
+        sb.append("Status: ").append(vehicle.getStatus()).append("\n");
+        sb.append("Reason: ").append(vehicle.getDecisionReason());
+        
+        if ("plate_mismatch".equals(vehicle.getDecisionReason())) {
+            sb.append("\n⚠️ Номер не совпадает с зарегистрированным!");
+        }
+        
+        sb.append("\nDetected at: ").append(vehicle.getDetectedAt());
+        return sb.toString();
     }
 }
