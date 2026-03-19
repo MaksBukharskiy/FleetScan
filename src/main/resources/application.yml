@@ -19,8 +19,8 @@ logging:
 
 telegram:
   bot:
-    token: ${TELEGRAM_BOT_TOKEN:}
-    name: ${TELEGRAM_BOT_NAME:fleetScanBot}
+    token: "8219016516:AAET9RoCVdiVG1ymoA60h5I49HaHx_yVsS8"
+    name: "fleetScanBot"
 
 fleetscan:
   ai:

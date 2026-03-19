@@ -19,18 +19,32 @@ services:
 
     depends_on:
       - db
+      - ai
 
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/fleetscan
 
       SPRING_DATASOURCE_USERNAME: taxiuser
       SPRING_DATASOURCE_PASSWORD: taxi123
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      TELEGRAM_BOT_NAME: ${TELEGRAM_BOT_NAME:-fleetScanBot}
-      FLEETSCAN_AI_BASE_URL: ${FLEETSCAN_AI_BASE_URL:-http://host.docker.internal:8000}
+      TELEGRAM_BOT_TOKEN: "8219016516:AAET9RoCVdiVG1ymoA60h5I49HaHx_yVsS8"
+      TELEGRAM_BOT_NAME: "fleetScanBot"
+      FLEETSCAN_AI_BASE_URL: ${FLEETSCAN_AI_BASE_URL:-http://ai:8000}
 
 
     restart: unless-stopped
 
+  ai:
+    build:
+      context: .
+      dockerfile: src/main/java/com/fleetScan/FleetscanAiDetection/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ai_models:/usr/src/app/fleet_ai/models
+    environment:
+      UVICORN_WORKERS: 1
+
 volumes:
   mysql_data:
+
+  ai_models:
