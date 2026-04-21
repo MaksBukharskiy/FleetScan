@@ -1,37 +1,48 @@
 services:
   db:
     image: mysql:8.0
-
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: fleetscan
       MYSQL_USER: taxiuser
       MYSQL_PASSWORD: taxi123
-
     ports:
       - "3307:3306"
-
     volumes:
       - mysql_data:/var/lib/mysql
 
   app:
     build: .
-
     depends_on:
       - db
       - ai
-
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/fleetscan
-
       SPRING_DATASOURCE_USERNAME: taxiuser
       SPRING_DATASOURCE_PASSWORD: taxi123
       TELEGRAM_BOT_TOKEN: "8219016516:AAET9RoCVdiVG1ymoA60h5I49HaHx_yVsS8"
       TELEGRAM_BOT_NAME: "fleetScanBot"
       FLEETSCAN_AI_BASE_URL: ${FLEETSCAN_AI_BASE_URL:-http://ai:8000}
-
-
+      FLEETSCAN_WEB_ACCESS_TOKEN: ${FLEETSCAN_WEB_ACCESS_TOKEN:-1234}
+      FLEETSCAN_WEB_ADMIN_CHAT_ID: ${FLEETSCAN_WEB_ADMIN_CHAT_ID:-0}
+      FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN: ${FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN:-driver-demo}
+      FLEETSCAN_UPLOAD_DIR: ${FLEETSCAN_UPLOAD_DIR:-/data/uploads}
+      FLEETSCAN_CORS_ALLOWED_ORIGINS: ${FLEETSCAN_CORS_ALLOWED_ORIGINS:-http://localhost:4173,http://localhost:5173,http://frontend:80}
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/data/uploads
     restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${FLEETSCAN_API_BASE_URL:-http://localhost:8080}
+    depends_on:
+      - app
+    ports:
+      - "4173:80"
 
   ai:
     build:
@@ -46,5 +57,5 @@ services:
 
 volumes:
   mysql_data:
-
   ai_models:
+  uploads:
