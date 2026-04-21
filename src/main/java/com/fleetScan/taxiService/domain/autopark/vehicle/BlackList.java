@@ -29,6 +29,13 @@ public class BlackList {
     @Column(name = "reason", nullable = false, length = 512)
     private String reason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", length = 32)
+    private BlackListCategory category;
+
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
     @OneToMany(mappedBy = "blackList")
     private List<DetectedVehicle> detectedVehicles;
 
