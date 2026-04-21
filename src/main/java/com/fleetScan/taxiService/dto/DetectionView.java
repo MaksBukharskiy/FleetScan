@@ -11,6 +11,7 @@ public record DetectionView(
         double confidence,
         String condition,
         String decisionReason,
-        LocalDateTime detectedAt
+        LocalDateTime detectedAt,
+        String photoUrl
 ) {
 }
