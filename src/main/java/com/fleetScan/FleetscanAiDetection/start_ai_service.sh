@@ -1,7 +1,7 @@
-#!/bin/bash
 
-# FleetScan AI Service Startup Script
-# This script starts the Python AI detection service
+
+
+
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -9,7 +9,7 @@ cd "$SCRIPT_DIR"
 echo "🔍 FleetScan AI Service"
 echo "======================"
 
-# Check if virtual environment exists
+
 if [ ! -d "venv" ]; then
     echo "❌ Virtual environment not found!"
     echo "Creating virtual environment..."
@@ -20,11 +20,11 @@ if [ ! -d "venv" ]; then
     fi
 fi
 
-# Activate virtual environment
+
 echo "📦 Activating virtual environment..."
 source venv/bin/activate
 
-# Check if requirements are installed
+
 echo "📋 Checking dependencies..."
 python3 -c "import fastapi, uvicorn, easyocr, ultralytics, cv2" 2>/dev/null
 if [ $? -ne 0 ]; then
@@ -36,14 +36,14 @@ if [ $? -ne 0 ]; then
     fi
 fi
 
-# Check if model exists
+
 MODEL_PATH="fleet_ai/models/plate_yolo/best.pt"
 if [ ! -f "$MODEL_PATH" ]; then
     echo "⚠️  Model file not found at $MODEL_PATH"
     echo "   The service will try to download it automatically"
 fi
 
-# Start the service
+
 echo "🚀 Starting AI service on port 8000..."
 echo "   Press Ctrl+C to stop"
 echo ""
