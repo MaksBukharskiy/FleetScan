@@ -42,7 +42,7 @@ public class BotService {
 
     private final Map<Long, String> userStates = new ConcurrentHashMap<>();
     private final Map<Long, UserRole> pendingRoleByChatId = new ConcurrentHashMap<>();
-    private final Map<Long, List<PhotoSize>> pendingPhotosByChatId = new ConcurrentHashMap<>();
+    private final Map<Long, PendingPhotoSubmission> pendingPhotosByChatId = new ConcurrentHashMap<>();
     private final Map<Long, Driver> pendingDriversByChatId = new ConcurrentHashMap<>();
 
     public String getUserState(Long chatId) {
@@ -211,7 +211,7 @@ public class BotService {
                "\n\n🚗 Теперь зарегистрируйте ваш автомобиль.\nВведите номер автомобиля (например, А123БВ777):";
     }
 
-    public void handlePhoto(Long chatId, Message message) {
+    public void handlePhoto(Long chatId, Message message, String storedImagePath) {
         Driver user = accessService.requireUser(chatId, UserRole.ADMIN, UserRole.OPERATOR);
         List<PhotoSize> photos = message.getPhoto();
         PhotoSize photo = photos.stream()
@@ -223,13 +223,14 @@ public class BotService {
 
         String state = userStates.get(chatId);
         if (AWAITING_PHOTO_TYPE.equals(state)) {
-            pendingPhotosByChatId.put(chatId, photos);
+            pendingPhotosByChatId.put(chatId, new PendingPhotoSubmission(photos, storedImagePath));
             return;
         }
 
         CarPhoto carPhoto = new CarPhoto();
         carPhoto.setDriver(user);
         carPhoto.setTelegramFileId(photo.getFileId());
+        carPhoto.setFilePath(storedImagePath);
         carPhoto.setPhotoType(PhotoType.OTHER);
         carPhoto.setStatus("PENDING");
         carPhotoRepository.save(carPhoto);
@@ -252,8 +253,8 @@ public class BotService {
     }
 
     public String handlePhotoTypeSelection(Long chatId, String text) {
-        List<PhotoSize> photos = pendingPhotosByChatId.get(chatId);
-        if (photos == null || photos.isEmpty()) {
+        PendingPhotoSubmission pending = pendingPhotosByChatId.get(chatId);
+        if (pending == null || pending.photos().isEmpty()) {
             return "⚠️ Сначала отправьте фото автомобиля.";
         }
 
@@ -272,13 +273,14 @@ public class BotService {
         }
 
         Driver user = accessService.requireUser(chatId, UserRole.ADMIN, UserRole.OPERATOR);
-        PhotoSize photo = photos.stream()
+        PhotoSize photo = pending.photos().stream()
                 .max(Comparator.comparing(PhotoSize::getFileSize))
                 .orElseThrow();
 
         CarPhoto carPhoto = new CarPhoto();
         carPhoto.setDriver(user);
         carPhoto.setTelegramFileId(photo.getFileId());
+        carPhoto.setFilePath(pending.filePath());
         carPhoto.setPhotoType(selectedType);
         carPhoto.setStatus("PENDING");
         carPhotoRepository.save(carPhoto);
@@ -287,6 +289,9 @@ public class BotService {
         pendingPhotosByChatId.remove(chatId);
 
         return "✅ Фото сохранено как: " + selectedType.getDescription();
+    }
+
+    private record PendingPhotoSubmission(List<PhotoSize> photos, String filePath) {
     }
 
     public String startCarRegistration(Long chatId) {
