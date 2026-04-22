@@ -9,6 +9,7 @@ import com.fleetScan.taxiService.service.bot.BotService;
 import com.fleetScan.taxiService.service.detection.DetectionProcessingService;
 import com.fleetScan.taxiService.service.ai.FleetAiService;
 import com.fleetScan.taxiService.service.notification.NotificationsService;
+import com.fleetScan.taxiService.service.storage.PhotoStorageService;
 import com.fleetScan.taxiService.dto.AiAnalysisResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class FleetScanBot extends TelegramLongPollingBot {
     private final DetectionProcessingService detectionProcessingService;
     private final NotificationsService notificationsService;
     private final DriverRepository driverRepository;
+    private final PhotoStorageService photoStorageService;
 
     @Value("${telegram.bot.token}")
     private String botToken;
@@ -91,12 +93,6 @@ public class FleetScanBot extends TelegramLongPollingBot {
         Long chatId = update.getMessage().getChatId();
         Message message = update.getMessage();
 
-        try {
-            botService.handlePhoto(chatId, message);
-        } catch (IllegalArgumentException e) {
-            sendMessage(chatId, "❌ " + e.getMessage());
-            return;
-        }
         sendMessage(chatId, "📸 Фото получено. Идёт анализ...");
 
         CompletableFuture.runAsync(() -> {
@@ -120,8 +116,10 @@ public class FleetScanBot extends TelegramLongPollingBot {
                 log.info("Фото скачано: {}", downloadedFile.getAbsolutePath());
 
                 byte[] photoBytes = Files.readAllBytes(downloadedFile.toPath());
+                String storedPath = photoStorageService.store(photoBytes, downloadedFile.getName());
 
-                handleCarPhoto(chatId, photoBytes, downloadedFile.getAbsolutePath());
+                botService.handlePhoto(chatId, message, storedPath);
+                handleCarPhoto(chatId, photoBytes, storedPath);
 
                 try {
                     Files.deleteIfExists(downloadedFile.toPath());
