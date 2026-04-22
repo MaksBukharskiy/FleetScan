@@ -3,13 +3,17 @@ package com.fleetScan.taxiService.service.blacklist;
 import com.fleetScan.taxiService.domain.autopark.driver.Driver;
 import com.fleetScan.taxiService.domain.autopark.driver.UserRole;
 import com.fleetScan.taxiService.domain.autopark.vehicle.BlackList;
+import com.fleetScan.taxiService.domain.autopark.vehicle.BlackListCategory;
 import com.fleetScan.taxiService.repository.autopark.vehicle.BlackListRepository;
 import com.fleetScan.taxiService.service.security.AccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,12 +24,19 @@ public class BlackListService {
 
     @Transactional
     public String addPlate(Long chatId, String plateNumber, String reason) {
+        return addPlate(chatId, plateNumber, reason, BlackListCategory.OTHER, null);
+    }
+
+    @Transactional
+    public String addPlate(Long chatId, String plateNumber, String reason, BlackListCategory category, LocalDateTime expiresAt) {
         Driver actor = accessService.requireUser(chatId, UserRole.ADMIN, UserRole.OPERATOR);
         String normalized = normalizePlate(plateNumber);
 
         BlackList entity = blackListRepository.findByPlateNumber(normalized).orElseGet(BlackList::new);
         entity.setPlateNumber(normalized);
         entity.setReason(reason == null || reason.isBlank() ? "manual_block" : reason.trim());
+        entity.setCategory(category == null ? BlackListCategory.OTHER : category);
+        entity.setExpiresAt(expiresAt);
         entity.setCreatedByChatId(actor.getChatId());
         entity.setIsActive(true);
 
@@ -51,6 +62,29 @@ public class BlackListService {
 
     public Optional<BlackList> findActiveByPlate(String plateNumber) {
         return blackListRepository.findByPlateNumberAndIsActiveTrue(normalizePlate(plateNumber));
+    }
+
+    public List<BlackList> listAll(Long chatId) {
+        accessService.requireUser(chatId, UserRole.ADMIN, UserRole.OPERATOR, UserRole.OBSERVER);
+        return blackListRepository.findAll().stream()
+                .sorted((left, right) -> {
+                    if (left.getUpdatedAt() == null && right.getUpdatedAt() == null) {
+                        return 0;
+                    }
+                    if (left.getUpdatedAt() == null) {
+                        return 1;
+                    }
+                    if (right.getUpdatedAt() == null) {
+                        return -1;
+                    }
+                    return right.getUpdatedAt().compareTo(left.getUpdatedAt());
+                })
+                .collect(Collectors.toList());
+    }
+
+    public Optional<BlackList> findByPlate(Long chatId, String plateNumber) {
+        accessService.requireUser(chatId, UserRole.ADMIN, UserRole.OPERATOR, UserRole.OBSERVER);
+        return blackListRepository.findByPlateNumber(normalizePlate(plateNumber));
     }
 
     public String statusByPlate(Long chatId, String plateNumber) {
