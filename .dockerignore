@@ -1,0 +1,9 @@
+.git
+.idea
+.gradle
+build
+frontend/node_modules
+frontend/dist
+src/main/java/com/fleetScan/FleetscanAiDetection/venv
+src/main/java/com/fleetScan/FleetscanAiDetection/plate_recognizer/.git
+**/.DS_Store
