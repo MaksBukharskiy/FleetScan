@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FleetScan | Водители</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-left"></div>
+  <div class="ambient ambient-right"></div>
+  <div class="toast-stack" id="toastStack"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="topbar-inner card">
+        <div class="brand"><span>ФлитСкан</span><span class="brand-badge">ВОДИТЕЛИ</span></div>
+        <nav class="anchor-nav">
+          <a href="./overview.html" data-i18n="navOverview">Обзор</a>
+          <a href="./incidents.html" data-i18n="navIncidents">Инциденты</a>
+          <a href="./blacklist.html" data-i18n="navBlacklist">Черный список</a>
+          <a href="./drivers.html" data-i18n="navDrivers">Водители</a>
+          <a href="./reports.html" data-i18n="navReports">Отчеты</a>
+          <a href="./analytics.html" data-i18n="navAnalytics">Диаграммы</a>
+          <a href="./driver.html" data-i18n="navDriver">Портал водителя</a>
+        </nav>
+        <div class="topbar-meta">
+          <span class="meta-item">Роль: <strong id="whoamiRole">—</strong></span>
+          <span class="meta-item">Автопарк: <strong id="whoamiFleet">—</strong></span>
+          <span class="meta-item">Сессия: <strong id="whoamiSession">—</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <section id="auditModeBanner" class="audit-banner" hidden>Режим аудитора: изменения отключены.</section>
+
+    <section class="hero card">
+      <div class="hero-copy">
+        <p class="eyebrow">Водители</p>
+        <h1>Управление профилями, фото и карточками.</h1>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="refreshBtn">Обновить</button>
+          <button class="btn btn-secondary" id="logoutBtn">Выйти</button>
+        </div>
+      </div>
+      <div class="status-panel">
+        <label class="field"><span>Единый пароль администратора</span><input id="accessTokenInput" type="password" data-i18n-placeholder="placeholderAdminPassword" placeholder="Введите пароль" /></label>
+        <button class="btn btn-primary block" id="saveBtn">Войти</button>
+        <p class="hint" id="connectionHint">Сначала выполните вход.</p>
+      </div>
+    </section>
+
+    <section class="grid-two" style="margin-top:16px;">
+      <article class="card">
+        <div class="section-head"><div><p class="eyebrow">Профиль</p><h2>Создать / обновить водителя</h2></div></div>
+        <form id="driverForm" class="stack">
+          <input type="hidden" id="driverIdInput" />
+          <label class="field"><span>Имя</span><input id="driverNameInput" type="text" /></label>
+          <label class="field"><span>Chat ID</span><input id="driverChatIdInput" type="number" /></label>
+          <div class="row">
+            <label class="field grow"><span>Роль</span><select id="driverRoleInput"><option value="OPERATOR">OPERATOR</option><option value="OBSERVER">OBSERVER</option><option value="ADMIN">ADMIN</option></select></label>
+            <label class="field grow"><span>Активен</span><select id="driverActiveInput"><option value="true">Да</option><option value="false">Нет</option></select></label>
+          </div>
+          <label class="field"><span>Номер авто</span><input id="driverPlateInput" type="text" /></label>
+          <label class="field"><span>Модель авто</span><input id="driverModelInput" type="text" /></label>
+          <div class="row">
+            <button class="btn btn-primary" data-mutating="1" id="driverSaveBtn" type="submit">Сохранить</button>
+            <button class="btn btn-secondary" id="driverResetBtn" type="button">Сбросить</button>
+          </div>
+        </form>
+      </article>
+
+      <article class="card">
+        <div class="section-head"><div><p class="eyebrow">Карточка</p><h2>Фото и история выбранного водителя</h2></div></div>
+        <div class="pill" id="selectedDriverPill">Водитель не выбран</div>
+        <div class="table-wrap compact">
+          <table>
+            <thead><tr><th>Тип</th><th>Дата</th><th>Статус</th><th></th></tr></thead>
+            <tbody id="driverPhotosBody"><tr><td colspan="4" class="empty">Фото не выбраны.</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <div class="section-head"><div><p class="eyebrow">Список</p><h2>Водители автопарка</h2></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Имя</th><th>Роль</th><th>Chat ID</th><th>Статистика</th><th>Действия</th></tr></thead>
+          <tbody id="driversBody"><tr><td colspan="5" class="empty">Нет данных.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./drivers.js"></script>
+</body>
+</html>
