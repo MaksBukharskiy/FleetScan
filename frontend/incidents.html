@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FleetScan | Инциденты</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-left"></div>
+  <div class="ambient ambient-right"></div>
+  <div class="toast-stack" id="toastStack"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="topbar-inner card">
+        <div class="brand"><span>ФлитСкан</span><span class="brand-badge">ИНЦИДЕНТЫ</span></div>
+        <nav class="anchor-nav">
+          <a href="./overview.html" data-i18n="navOverview">Обзор</a>
+          <a href="./incidents.html" data-i18n="navIncidents">Инциденты</a>
+          <a href="./blacklist.html" data-i18n="navBlacklist">Черный список</a>
+          <a href="./drivers.html" data-i18n="navDrivers">Водители</a>
+          <a href="./reports.html" data-i18n="navReports">Отчеты</a>
+          <a href="./analytics.html" data-i18n="navAnalytics">Диаграммы</a>
+          <a href="./driver.html" data-i18n="navDriver">Портал водителя</a>
+        </nav>
+        <div class="topbar-meta">
+          <span class="meta-item">Роль: <strong id="whoamiRole">—</strong></span>
+          <span class="meta-item">Автопарк: <strong id="whoamiFleet">—</strong></span>
+          <span class="meta-item">Сессия: <strong id="whoamiSession">—</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <section id="auditModeBanner" class="audit-banner" hidden>Режим аудитора: изменения отключены.</section>
+
+    <section class="hero card">
+      <div class="hero-copy">
+        <p class="eyebrow">Инциденты</p>
+        <h1>Очередь BLOCKED и UNDER_REVIEW.</h1>
+        <p class="lede">Быстрые действия по инцидентам: принять, отправить на проверку, заблокировать, добавить комментарий.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="refreshBtn">Обновить</button>
+          <button class="btn btn-secondary" id="exportBtn">Экспорт инцидентов</button>
+          <button class="btn btn-secondary" id="logoutBtn">Выйти</button>
+        </div>
+      </div>
+      <div class="status-panel">
+        <label class="field"><span>Единый пароль администратора</span><input id="accessTokenInput" type="password" data-i18n-placeholder="placeholderAdminPassword" placeholder="Введите пароль" /></label>
+        <button class="btn btn-primary block" id="saveBtn">Войти</button>
+        <p class="hint" id="connectionHint">Для действий нужна активная сессия.</p>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <div class="section-head"><div><p class="eyebrow">Очередь</p><h2>Активные инциденты</h2></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Номер</th><th>Статус</th><th>Причина</th><th>Дата</th><th>Действия</th></tr></thead>
+          <tbody id="incidentsBody"><tr><td colspan="5" class="empty">Инциденты не загружены.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="dialog-modal" id="incidentModal" hidden>
+    <div class="photo-modal-backdrop" id="incidentModalBackdrop"></div>
+    <div class="dialog-card card">
+      <div class="photo-modal-head">
+        <div>
+          <p class="eyebrow">Комментарий</p>
+          <h3 id="incidentModalTitle">Обновить инцидент</h3>
+        </div>
+        <button class="btn btn-secondary" id="incidentModalClose" type="button">Закрыть</button>
+      </div>
+      <div class="stack">
+        <label class="field">
+          <span>Комментарий к решению</span>
+          <textarea id="incidentCommentInput" rows="4" placeholder="Опишите причину решения"></textarea>
+        </label>
+        <div class="row">
+          <button class="btn btn-primary" id="incidentModalConfirm" type="button">Сохранить решение</button>
+          <button class="btn btn-secondary" id="incidentModalCancel" type="button">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./incidents.js"></script>
+</body>
+</html>

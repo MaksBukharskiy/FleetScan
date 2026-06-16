@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FleetScan | Обзор</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-left"></div>
+  <div class="ambient ambient-right"></div>
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="topbar-inner card">
+        <div class="brand"><span>ФлитСкан</span><span class="brand-badge">ОБЗОР</span></div>
+        <nav class="anchor-nav">
+          <a href="./overview.html" data-i18n="navOverview">Обзор</a>
+          <a href="./incidents.html" data-i18n="navIncidents">Инциденты</a>
+          <a href="./blacklist.html" data-i18n="navBlacklist">Черный список</a>
+          <a href="./drivers.html" data-i18n="navDrivers">Водители</a>
+          <a href="./reports.html" data-i18n="navReports">Отчеты</a>
+          <a href="./analytics.html" data-i18n="navAnalytics">Диаграммы</a>
+          <a href="./driver.html" data-i18n="navDriver">Портал водителя</a>
+        </nav>
+        <div class="topbar-meta">
+          <span class="meta-item">Роль: <strong id="whoamiRole">—</strong></span>
+          <span class="meta-item">Автопарк: <strong id="whoamiFleet">—</strong></span>
+          <span class="meta-item">Сессия: <strong id="whoamiSession">—</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <section id="auditModeBanner" class="audit-banner" hidden>Режим аудитора: изменения отключены.</section>
+
+    <section class="hero card">
+      <div class="hero-copy">
+        <p class="eyebrow">Обзор</p>
+        <h1>Ключевые метрики и последние детекции.</h1>
+        <p class="lede">Эта страница для ежедневного мониторинга: динамика статусов, поиск по журналу и быстрый экспорт.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="refreshBtn">Обновить</button>
+          <button class="btn btn-secondary" id="exportBtn">Экспорт</button>
+          <button class="btn btn-secondary" id="logoutBtn">Выйти</button>
+        </div>
+      </div>
+      <div class="status-panel">
+        <label class="field"><span>Единый пароль администратора</span><input id="accessTokenInput" type="password" data-i18n-placeholder="placeholderAdminPassword" placeholder="Введите пароль" /></label>
+        <div class="row">
+          <label class="field grow"><span>Период с</span><input id="fromDateInput" type="date" /></label>
+          <label class="field grow"><span>Период по</span><input id="toDateInput" type="date" /></label>
+        </div>
+        <button class="btn btn-primary block" id="saveBtn">Войти</button>
+        <p class="hint" id="connectionHint">Введите пароль и нажмите «Войти».</p>
+      </div>
+    </section>
+
+    <section class="metrics" id="metrics"></section>
+
+    <section class="card" style="margin:16px 0;">
+      <div class="section-head"><div><p class="eyebrow">Фильтры</p><h2>Журнал детекций</h2></div></div>
+      <div class="filters-grid">
+        <select id="statusFilter">
+          <option value="">Все статусы</option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="BLOCKED">BLOCKED</option>
+          <option value="UNDER_REVIEW">UNDER_REVIEW</option>
+        </select>
+        <input id="plateFilter" type="text" placeholder="Номер" />
+        <input id="reasonFilter" type="text" placeholder="Причина решения" />
+        <input id="driverFilter" type="number" placeholder="Driver ID / Chat ID" />
+        <input id="confidenceFromFilter" type="number" min="0" max="1" step="0.01" placeholder="Confidence от" />
+        <input id="confidenceToFilter" type="number" min="0" max="1" step="0.01" placeholder="Confidence до" />
+      </div>
+      <div class="chips chips-preset">
+        <button class="btn btn-ghost" data-preset="today" type="button">Сегодня</button>
+        <button class="btn btn-ghost" data-preset="7d" type="button">7 дней</button>
+        <button class="btn btn-ghost" data-preset="30d" type="button">30 дней</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Номер</th><th>Статус</th><th>Уверенность</th><th>Причина</th><th>Дата</th><th></th></tr></thead>
+          <tbody id="detectionsBody"><tr><td colspan="6" class="empty">Нет данных.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="photo-modal" id="photoModal" hidden>
+    <div class="photo-modal-backdrop" id="photoModalBackdrop"></div>
+    <div class="photo-modal-card">
+      <div class="photo-modal-head"><div><p class="eyebrow">Фото</p><h3 id="photoModalTitle">Детекция</h3></div><button class="btn btn-secondary" id="photoModalClose" type="button">Закрыть</button></div>
+      <img id="photoModalImage" alt="preview" />
+    </div>
+  </div>
+
+  <script type="module" src="./overview.js"></script>
+</body>
+</html>

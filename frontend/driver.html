@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FleetScan | Портал водителя</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-left"></div>
+  <div class="ambient ambient-right"></div>
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="topbar-inner card">
+        <div class="brand">
+          <span>ФлитСкан Водитель</span>
+          <span class="brand-badge">PORTAL</span>
+        </div>
+        <nav class="anchor-nav">
+          <a href="./overview.html" data-i18n="navOverview">Обзор</a>
+          <a href="./analytics.html" data-i18n="navAnalytics">Диаграммы</a>
+          <a href="#profile">Профиль</a>
+          <a href="#upload">Загрузка</a>
+          <a href="#gallery">Фото</a>
+          <a href="#history">История</a>
+        </nav>
+        <div class="topbar-meta">
+          <span class="meta-item">Сессия водителя</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="hero card">
+      <div class="hero-copy">
+        <p class="eyebrow">Портал водителя</p>
+        <h1>Профиль водителя, фото и история проверок в одном окне.</h1>
+        <p class="lede">B2B-кабинет водителя: понятные статусы, простая загрузка фото и прозрачная история AI-детекций.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="refreshBtn">Обновить</button>
+          <button class="btn btn-secondary" id="logoutBtn">Выйти</button>
+          <a class="btn btn-ghost link-button" href="./">В админку</a>
+        </div>
+      </div>
+
+      <div class="status-panel">
+        <label class="field">
+          <span>Пароль водителя</span>
+          <input id="accessTokenInput" type="password" placeholder="Введите пароль водителя" />
+        </label>
+        <label class="field">
+          <span>Chat ID</span>
+          <input id="chatIdInput" type="number" placeholder="6585077009" />
+        </label>
+        <button class="btn btn-primary block" id="saveBtn">Войти в портал</button>
+        <p class="hint" id="connectionHint">Сайт ждёт токен и chat id водителя.</p>
+      </div>
+    </section>
+
+    <section class="card section-intro">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Разделы</p>
+          <h2>Секции кабинета</h2>
+        </div>
+      </div>
+      <div class="chips chips-preset">
+        <span class="pill">Профиль</span>
+        <span class="pill">Загрузка фото</span>
+        <span class="pill">Галерея</span>
+        <span class="pill">История проверок</span>
+      </div>
+    </section>
+
+    <section class="metrics" id="metrics"></section>
+
+    <section class="grid-two">
+      <article class="card" id="profile">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Profile</p>
+            <h2>Профиль водителя</h2>
+          </div>
+        </div>
+        <div class="stack" id="profileCard">
+          <div class="empty">Войдите, чтобы увидеть профиль.</div>
+        </div>
+      </article>
+
+      <article class="card" id="upload">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Upload</p>
+            <h2>Загрузка фото</h2>
+          </div>
+        </div>
+        <form id="uploadForm" class="stack">
+          <label class="field">
+            <span>Фото</span>
+            <input id="uploadFileInput" type="file" accept="image/*" />
+          </label>
+          <label class="field">
+            <span>Тип фото</span>
+            <select id="uploadTypeInput">
+              <option value="OTHER">OTHER</option>
+              <option value="FRONT">FRONT</option>
+              <option value="REAR">REAR</option>
+              <option value="INTERIOR">INTERIOR</option>
+              <option value="DASHBOARD">DASHBOARD</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Комментарий</span>
+            <input id="uploadNoteInput" type="text" placeholder="Например: после химчистки" />
+          </label>
+          <button class="btn btn-primary" type="submit">Загрузить</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="grid-two">
+      <article class="card" id="gallery">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Gallery</p>
+            <h2>Мои фото</h2>
+          </div>
+        </div>
+        <div class="table-wrap compact">
+          <table>
+            <thead>
+              <tr>
+                <th>Тип</th>
+                <th>Статус</th>
+                <th>Дата</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="photosBody">
+              <tr><td colspan="4" class="empty">Фото появятся после входа.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card" id="history">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Detections</p>
+            <h2>История проверок</h2>
+          </div>
+        </div>
+        <div class="table-wrap compact">
+          <table>
+            <thead>
+              <tr>
+                <th>Номер</th>
+                <th>Статус</th>
+                <th>Дата</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="detectionsBody">
+              <tr><td colspan="4" class="empty">Проверки появятся после входа.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div class="photo-modal" id="photoModal" hidden>
+    <div class="photo-modal-backdrop" id="photoModalBackdrop"></div>
+    <div class="photo-modal-card">
+      <div class="photo-modal-head">
+        <div>
+          <p class="eyebrow">Preview</p>
+          <h3 id="photoModalTitle">Фото</h3>
+        </div>
+        <button class="btn btn-secondary" id="photoModalClose" type="button">Закрыть</button>
+      </div>
+      <img id="photoModalImage" alt="Photo preview" />
+    </div>
+  </div>
+
+  <script type="module" src="./driver.js"></script>
+</body>
+</html>
