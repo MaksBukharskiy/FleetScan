@@ -37,7 +37,7 @@ Diesel is a multi-tenant inspection platform:
 
 - **Telegram bot** — fleet onboarding, invites, photo intake, blacklist commands, weekly photo reminders
 - **AI plate recognition** — FastAPI service (EasyOCR + YOLO plate ROI); Uzbek (`01 A 123 BC`, `01 123 ABC`) and Russian formats, configurable via `PLATE_COUNTRIES`
-- **AI damage assessment** — Claude vision returns damaged parts, type and severity (`none/minor/moderate/severe`) when `ANTHROPIC_API_KEY` is set; otherwise a rough image heuristic, flagged as `damage_method: heuristic`
+- **Hybrid damage assessment** — a free local detector (RT-DETRv2, Apache-2.0) checks every photo offline; only unclear cases (low-score or severe findings, plus a 5% audit sample of clean photos) go to Claude Haiku (~$0.0005/photo) with the local findings as hints. See [Damage detection](#damage-detection)
 - **Smart decisions** — blacklist hit → blocked; plate mismatch / low confidence / damage → under review
 - **Admin web UI** — overview, incidents, blacklist, drivers, reports, analytics
 - **Web login via Telegram** — `/web` in the bot issues a one-time 8-character code (5 min, single use); admins/observers get the admin panel, drivers get the portal
@@ -113,8 +113,11 @@ Important environment variables (see `docker-compose.yml`):
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_NAME` | Bot credentials from BotFather |
 | `FLEETSCAN_AI_BASE_URL` | AI service URL (default `http://ai:8000` in Compose) |
 | `FLEETSCAN_AI_MIN_CONFIDENCE` | Min OCR confidence for auto-pass (default `0.80`) |
-| `ANTHROPIC_API_KEY` | Enables Claude vision damage assessment (optional) |
-| `DAMAGE_MODEL` / `DAMAGE_EFFORT` | Claude model (default `claude-opus-5-5`) and effort (default `medium`) |
+| `ANTHROPIC_API_KEY` | Enables the Claude step of damage assessment (optional) |
+| `DAMAGE_MODEL` / `DAMAGE_EFFORT` | Claude model (default `claude-haiku-5-5`) and effort (default `low`) |
+| `DAMAGE_DETECTOR_PATH` | Local detector dir (default `fleet_ai/models/damage_detector`) |
+| `DAMAGE_LOCAL_SURE` | Local score trusted without Claude (default `0.75`) |
+| `DAMAGE_AUDIT_RATE` | Share of clean photos re-checked by Claude (default `0.05`) |
 | `DAMAGE_DEFECT_SEVERITIES` | Severities that send a car to review (default `moderate,severe`) |
 | `PLATE_COUNTRIES` | Plate formats to accept (default `UZ,RU`) |
 | `FLEETSCAN_UPLOAD_DIR` | Photo storage path |
@@ -136,6 +139,27 @@ For each Telegram photo (main inspection path):
 6. On `BLOCKED` / `UNDER_REVIEW` → notify fleet admins in Telegram
 
 > Driver **web** photo upload currently stores the photo only; full AI inspection runs on the **Telegram** photo flow.
+
+### Damage detection
+
+Each photo goes through:
+
+1. **Local detector** — free, offline, ~0.2 s on CPU. Classes: `scratch`, `dent`, `crack`, `lamp_broken`, `glass_shatter`, `tire_flat`.
+2. **Decided locally** if nothing is found, or damage is found with score ≥ `DAMAGE_LOCAL_SURE` and is not severe.
+3. **Sent to Claude Haiku** otherwise (and for `DAMAGE_AUDIT_RATE` of clean photos), with the local boxes as hints. Claude also names the damaged part and writes a Russian summary.
+4. Fallbacks: no local model → Claude only; no API key → local only; neither → image heuristic (`damage_method: heuristic`, unreliable).
+
+`damage_method` in the result is `local`, `hybrid`, `llm` or `heuristic`.
+
+**Training the local model** (COCO-format dataset, e.g. CarDD or a Roboflow export, plus your own labelled photos):
+
+```bash
+cd src/main/java/com/fleetScan/FleetscanAiDetection
+pip install -r tools/requirements-train.txt
+python tools/train_damage_detector.py --data /path/to/dataset --epochs 40
+```
+
+The model is saved to `fleet_ai/models/damage_detector` (git-ignored). Check each dataset's license before commercial use. Note: the plate detector still uses Ultralytics YOLO (AGPL-3.0) — review licensing before a closed commercial launch.
 
 ### Main API groups
 
@@ -201,7 +225,7 @@ Diesel — мультиарендная платформа инспекции т
 
 - **Telegram-бот** — онбординг флота, инвайты, приём фото, команды blacklist, еженедельные напоминания
 - **AI-распознавание номеров** — FastAPI (EasyOCR + YOLO); узбекские (`01 A 123 BC`, `01 123 ABC`) и российские номера, настройка `PLATE_COUNTRIES`
-- **AI-оценка повреждений** — Claude vision: какие детали повреждены, тип и тяжесть, если задан `ANTHROPIC_API_KEY`; иначе грубая эвристика с пометкой `heuristic`
+- **Гибридная оценка повреждений** — бесплатный локальный детектор (RT-DETRv2, Apache-2.0) проверяет каждое фото без интернета; спорные случаи (низкая уверенность, тяжёлые повреждения и 5% «чистых» фото для контроля) уходят в Claude Haiku (~$0.0005 за фото). Обучение: `tools/train_damage_detector.py`, подробности в английском разделе *Damage detection*
 - **Авторешения** — blacklist → blocked; несовпадение / низкая уверенность / повреждения → under review
 - **Админ UI** — обзор, инциденты, blacklist, водители, отчёты, аналитика
 - **Вход на сайт через Telegram** — команда `/web` выдаёт одноразовый код (5 минут); админы и наблюдатели попадают в админку, водители — в кабинет

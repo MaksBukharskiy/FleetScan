@@ -1,10 +1,11 @@
 import os
-from typing import Dict, Any, Tuple
+import random
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from PIL import Image
 
-from . import damage_llm
+from . import damage_llm, damage_local
 from .lpr_detector import recognize_license
 
 
@@ -115,31 +116,96 @@ SEVERITY_SCORE = {"none": 0.0, "minor": 0.33, "moderate": 0.66, "severe": 1.0}
 DEFECT_SEVERITIES = {
     s.strip() for s in os.getenv("DAMAGE_DEFECT_SEVERITIES", "moderate,severe").split(",") if s.strip()
 }
+# Local detections at or above this score are trusted without asking the LLM.
+LOCAL_SURE = float(os.getenv("DAMAGE_LOCAL_SURE", "0.75"))
+# Share of "clean" photos still double-checked by the LLM: catches what the
+# local model misses and gives labelled examples for retraining.
+AUDIT_RATE = float(os.getenv("DAMAGE_AUDIT_RATE", "0.05"))
 
 
-def assess_vehicle_condition(image_path: str) -> Dict[str, Any]:
-    llm = damage_llm.assess_damage(image_path)
-    if llm is None:
-        return _assess_heuristic(image_path)
+def _condition_for(severity: str) -> str:
+    return "defect" if severity in DEFECT_SEVERITIES else "ok"
 
+
+def _from_llm(llm: Dict[str, Any], method: str, local: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     severity = llm.get("overall_severity", "none")
     if not llm.get("is_vehicle_photo", True) or llm.get("photo_quality") == "unusable":
         condition = "invalid_photo"
-    elif severity in DEFECT_SEVERITIES:
-        condition = "defect"
     else:
-        condition = "ok"
-
-    return {
+        condition = _condition_for(severity)
+    result = {
         "condition": condition,
         "condition_confidence": float(llm.get("confidence", 0.0)),
-        "damage_method": "llm",
+        "damage_method": method,
         "damage_score": SEVERITY_SCORE.get(severity, 0.0),
         "damage_severity": severity,
         "damages": llm.get("damages", []),
         "damage_summary": llm.get("summary"),
         "photo_quality": llm.get("photo_quality"),
     }
+    if local is not None:
+        result["local_detections"] = local["detections"]
+    return result
+
+
+_LABEL_RU = {
+    "scratch": "царапина", "dent": "вмятина", "crack": "трещина",
+    "lamp_broken": "разбита фара/фонарь", "glass_shatter": "разбито стекло", "tire_flat": "спущено колесо",
+}
+
+
+def _from_local(local: Dict[str, Any], confidence: float) -> Dict[str, Any]:
+    severity = local["severity"]
+    damages = [
+        {"part": "unknown", "type": d["label"], "severity": d["severity"],
+         "description": _LABEL_RU.get(d["label"], d["label"]) + f" ({d['score']:.0%})"}
+        for d in local["detections"]
+    ]
+    summary = "; ".join(x["description"] for x in damages) if damages else None
+    return {
+        "condition": _condition_for(severity),
+        "condition_confidence": float(confidence),
+        "damage_method": "local",
+        "damage_score": SEVERITY_SCORE.get(severity, 0.0),
+        "damage_severity": severity,
+        "damages": damages,
+        "damage_summary": summary,
+        "local_detections": local["detections"],
+    }
+
+
+def assess_vehicle_condition(image_path: str) -> Dict[str, Any]:
+    """
+    Hybrid pipeline:
+      1. Local detector (free, offline) looks at every photo.
+      2. Clear cases are decided locally: nothing found, or confident non-severe damage.
+      3. Unclear cases (low-score detections, anything severe, plus a random audit
+         sample of clean photos) go to Claude Haiku with the local findings as hints.
+      4. Without a local model -> Claude only; without an API key -> local only;
+         with neither -> image heuristic.
+    """
+    local = damage_local.detect(image_path)
+
+    if local is None:
+        llm = damage_llm.assess_damage(image_path)
+        return _from_llm(llm, "llm") if llm else _assess_heuristic(image_path)
+
+    detections = local["detections"]
+    top = detections[0]["score"] if detections else 0.0
+
+    if not detections:
+        needs_llm = random.random() < AUDIT_RATE
+    else:
+        needs_llm = top < LOCAL_SURE or local["severity"] == "severe"
+
+    if needs_llm:
+        llm = damage_llm.assess_damage(image_path, local_hint=local)
+        if llm:
+            return _from_llm(llm, "hybrid", local)
+
+    # Decided locally (or LLM unavailable): confidence reflects how sure the detector was.
+    confidence = 0.8 if not detections else top
+    return _from_local(local, confidence)
 
 
 def analyze_vehicle(image_path: str) -> Dict[str, Any]:

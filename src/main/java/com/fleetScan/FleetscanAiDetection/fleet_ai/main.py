@@ -5,7 +5,7 @@ import tempfile
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 
-from . import damage_llm
+from . import damage_llm, damage_local
 from .vehicle_analyzer import analyze_vehicle
 
 app = FastAPI()
@@ -15,7 +15,8 @@ app = FastAPI()
 def root():
     return {
         "status": "LPR service running",
-        "damage_method": "llm" if damage_llm.is_enabled() else "heuristic",
+        "damage_local_model": damage_local.is_enabled(),
+        "damage_llm": damage_llm.MODEL if damage_llm.is_enabled() else None,
     }
 
 

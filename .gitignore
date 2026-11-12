@@ -50,3 +50,6 @@ out/
 !.env.example
 logs/
 *.log
+
+# Trained local damage model (large, distribute separately)
+**/models/damage_detector/

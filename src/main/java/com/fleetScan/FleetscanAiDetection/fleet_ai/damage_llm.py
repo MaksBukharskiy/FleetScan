@@ -17,8 +17,11 @@ try:
 except Exception:  # pragma: no cover
     anthropic = None
 
-MODEL = os.getenv("DAMAGE_MODEL", "claude-opus-5-5")
-EFFORT = os.getenv("DAMAGE_EFFORT", "medium")
+# Haiku: ~$0.10 / $0.50 per 1M tokens -> roughly $0.0003-0.0005 per photo.
+MODEL = os.getenv("DAMAGE_MODEL", "claude-haiku-5-5")
+EFFORT = os.getenv("DAMAGE_EFFORT", "low")
+# Server-side refusal fallback exists for Opus/Sonnet/Fable only, not Haiku.
+_FALLBACK_MODELS = ("claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-2", "claude-fable-5-1")
 
 SEVERITIES = ["none", "minor", "moderate", "severe"]
 
@@ -93,38 +96,60 @@ def _media_type(image_bytes: bytes) -> str:
 
 
 MAX_IMAGE_BYTES = 3_500_000  # base64 adds ~33%; API limit is 5 MB per image
+# Image tokens grow with pixel count (~w*h/750), so cap the long side:
+# 1280px is enough to see dents and scratches and keeps a photo around 1.5k tokens.
+MAX_SIDE = int(os.getenv("DAMAGE_MAX_SIDE", "1280"))
 
 
-def _shrink(data: bytes) -> bytes:
+def _prepare(data: bytes) -> bytes:
     import io
     from PIL import Image
 
-    img = Image.open(io.BytesIO(data)).convert("RGB")
-    img.thumbnail((2000, 2000))
+    img = Image.open(io.BytesIO(data))
+    if max(img.size) <= MAX_SIDE and len(data) <= MAX_IMAGE_BYTES:
+        return data
+    img = img.convert("RGB")
+    img.thumbnail((MAX_SIDE, MAX_SIDE))
     out = io.BytesIO()
     img.save(out, format="JPEG", quality=85)
     return out.getvalue()
 
 
-def assess_damage(image_path: str) -> Optional[Dict[str, Any]]:
+def _hint_text(local_hint: Optional[Dict[str, Any]]) -> str:
+    if not local_hint or not local_hint.get("detections"):
+        return ""
+    lines = [
+        f"- {d['label']} (score {d['score']}) at box x1,y1,x2,y2 = {d.get('box_rel', d['box'])} (fractions of width/height)"
+        for d in local_hint["detections"][:8]
+    ]
+    return ("\n\nA fast local detector flagged these regions (it is often wrong; "
+            "confirm or reject each by looking at the photo yourself):\n" + "\n".join(lines))
+
+
+def assess_damage(image_path: str, local_hint: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     if not is_enabled():
         return None
 
     with open(image_path, "rb") as f:
         data = f.read()
-    if len(data) > MAX_IMAGE_BYTES:
-        data = _shrink(data)
+    try:
+        data = _prepare(data)
+    except Exception:
+        logger.warning("Could not read image for LLM damage check: %s", image_path)
+        return None
     media_type = _media_type(data)
     if not media_type:
         logger.warning("Unsupported image format for LLM damage check: %s", image_path)
         return None
 
     try:
+        extra: Dict[str, Any] = {}
+        if MODEL in _FALLBACK_MODELS:
+            extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
         response = _get_client().beta.messages.create(
             model=MODEL,
             max_tokens=4000,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
+            **extra,
             output_config={
                 "effort": EFFORT,
                 "format": {"type": "json_schema", "schema": SCHEMA},
@@ -137,18 +162,18 @@ def assess_damage(image_path: str) -> Optional[Dict[str, Any]]:
                         "media_type": media_type,
                         "data": base64.standard_b64encode(data).decode("utf-8"),
                     }},
-                    {"type": "text", "text": PROMPT},
+                    {"type": "text", "text": PROMPT + _hint_text(local_hint)},
                 ],
             }],
         )
     except anthropic.RateLimitError:
-        logger.warning("Claude rate limit hit, falling back to heuristic")
+        logger.warning("Claude rate limit hit, falling back")
         return None
     except anthropic.APIStatusError as e:
         logger.error("Claude API error %s: %s", e.status_code, e.message)
         return None
     except anthropic.APIConnectionError:
-        logger.error("Claude API unreachable, falling back to heuristic")
+        logger.error("Claude API unreachable, falling back")
         return None
 
     if response.stop_reason != "end_turn":
