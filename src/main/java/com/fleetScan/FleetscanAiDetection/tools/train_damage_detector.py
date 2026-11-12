@@ -1,10 +1,16 @@
 """
 Train the local damage detector (RT-DETRv2, Apache-2.0) on a COCO-format dataset.
 
-Dataset layout (Roboflow "COCO" export, CarDD converted to COCO, or your own):
-    DATA/
-      train/  *.jpg + _annotations.coco.json
-      valid/  *.jpg + _annotations.coco.json
+Two dataset layouts are detected automatically:
+
+  Roboflow "COCO" export / your own data:
+    DATA/train/  *.jpg + _annotations.coco.json
+    DATA/valid/  *.jpg + _annotations.coco.json
+    DATA/test/   (optional, used by evaluate_damage_detector.py)
+
+  CarDD (CarDD_COCO folder, research use only, see its license):
+    DATA/annotations/instances_{train,val,test}2017.json
+    DATA/{train,val,test}2017/*.jpg
 
 Category names are mapped to the labels the service understands:
     scratch, dent, crack, lamp_broken, glass_shatter, tire_flat
@@ -47,8 +53,24 @@ CANONICAL = {
 }
 
 
-def load_split(split_dir: str, label_map: Dict[str, str]):
-    with open(os.path.join(split_dir, "_annotations.coco.json"), encoding="utf-8") as f:
+_CARDD_SPLITS = {"train": "train2017", "valid": "val2017", "test": "test2017"}
+
+
+def split_paths(data_dir: str, split: str):
+    """Returns (annotation_json, image_dir) for split in {train, valid, test}."""
+    roboflow = os.path.join(data_dir, split, "_annotations.coco.json")
+    if os.path.isfile(roboflow):
+        return roboflow, os.path.join(data_dir, split)
+    cardd = _CARDD_SPLITS[split]
+    ann = os.path.join(data_dir, "annotations", f"instances_{cardd}.json")
+    if os.path.isfile(ann):
+        return ann, os.path.join(data_dir, cardd)
+    raise FileNotFoundError(f"No '{split}' split found in {data_dir} (expected Roboflow or CarDD COCO layout)")
+
+
+def load_split(data_dir: str, split: str, label_map: Dict[str, str]):
+    ann_path, split_dir = split_paths(data_dir, split)
+    with open(ann_path, encoding="utf-8") as f:
         coco = json.load(f)
     cat_names = {}
     for c in coco["categories"]:
@@ -114,8 +136,8 @@ def main():
         with open(args.label_map, encoding="utf-8") as f:
             label_map = {k.lower(): v for k, v in json.load(f).items()}
 
-    train_items, train_cats = load_split(os.path.join(args.data, "train"), label_map)
-    valid_items, valid_cats = load_split(os.path.join(args.data, "valid"), label_map)
+    train_items, train_cats = load_split(args.data, "train", label_map)
+    valid_items, valid_cats = load_split(args.data, "valid", label_map)
 
     labels = sorted({n for n in train_cats.values()})
     label2id = {n: i for i, n in enumerate(labels)}

@@ -159,7 +159,15 @@ pip install -r tools/requirements-train.txt
 python tools/train_damage_detector.py --data /path/to/dataset --epochs 40
 ```
 
-The model is saved to `fleet_ai/models/damage_detector` (git-ignored). Check each dataset's license before commercial use. Note: the plate detector still uses Ultralytics YOLO (AGPL-3.0) — review licensing before a closed commercial launch.
+Both the Roboflow COCO export layout and the CarDD layout (`annotations/instances_*2017.json`) are detected automatically. The model is saved to `fleet_ai/models/damage_detector` (git-ignored).
+
+**Evaluating** — per-photo precision/recall per class and how much traffic the hybrid would decide locally:
+
+```bash
+python tools/evaluate_damage_detector.py --data /path/to/dataset --model fleet_ai/models/damage_detector
+```
+
+> **Dataset licensing.** CarDD is licensed for research only; commercial use (explicitly including *testing commercial systems*) needs written permission from the PIC Lab, CAS. A model trained on CarDD is a feasibility prototype and must not run in production without that permission. Check every dataset's license before commercial use. Note: the plate detector still uses Ultralytics YOLO (AGPL-3.0) — review licensing before a closed commercial launch.
 
 ### Main API groups
 
