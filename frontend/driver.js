@@ -1,8 +1,7 @@
 const state = {
   apiBase: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
-  accessToken: localStorage.getItem("fleetscan.driver.accessToken") || "",
+  accessToken: "",
   sessionToken: localStorage.getItem("fleetscan.driver.sessionToken") || "",
-  chatId: localStorage.getItem("fleetscan.driver.chatId") || "",
   photoPreviewUrl: null,
 };
 
@@ -24,7 +23,7 @@ function applyLocale() {
     ru: {
       navOverview: "Обзор",
       navAnalytics: "Диаграммы",
-      hintNoSession: "Введите пароль водителя и chat id, затем нажмите вход.",
+      hintNoSession: "Отправьте боту /web и введите полученный код.",
       hintSessionClosed: "Сессия завершена.",
       hintSelectFile: "Выберите файл фото.",
       loginFailed: "Вход не выполнен",
@@ -41,7 +40,7 @@ function applyLocale() {
     en: {
       navOverview: "Overview",
       navAnalytics: "Charts",
-      hintNoSession: "Enter driver token and chat id, then click login.",
+      hintNoSession: "Send /web to the bot and enter the code.",
       hintSessionClosed: "Session closed.",
       hintSelectFile: "Select a photo file.",
       loginFailed: "Login failed",
@@ -104,7 +103,7 @@ function applyLocale() {
 function tx(key) {
   const dictionary = {
     ru: {
-      hintNoSession: "Введите пароль водителя и chat id, затем нажмите вход.",
+      hintNoSession: "Отправьте боту /web и введите полученный код.",
       hintSessionClosed: "Сессия завершена.",
       hintSelectFile: "Выберите файл фото.",
       loginFailed: "Вход не выполнен",
@@ -119,7 +118,7 @@ function tx(key) {
       missingSession: "Сначала выполните вход по токену водителя.",
     },
     en: {
-      hintNoSession: "Enter driver token and chat id, then click login.",
+      hintNoSession: "Send /web to the bot and enter the code.",
       hintSessionClosed: "Session closed.",
       hintSelectFile: "Select a photo file.",
       loginFailed: "Login failed",
@@ -139,7 +138,6 @@ function tx(key) {
 
 const els = {
   accessTokenInput: document.getElementById("accessTokenInput"),
-  chatIdInput: document.getElementById("chatIdInput"),
   metrics: document.getElementById("metrics"),
   profileCard: document.getElementById("profileCard"),
   photosBody: document.getElementById("photosBody"),
@@ -158,14 +156,12 @@ const els = {
 };
 
 els.accessTokenInput.value = state.accessToken;
-els.chatIdInput.value = state.chatId;
 applyLocale();
 
 document.getElementById("saveBtn").addEventListener("click", async () => {
   state.accessToken = els.accessTokenInput.value.trim();
-  state.chatId = els.chatIdInput.value.trim();
-  localStorage.setItem("fleetscan.driver.accessToken", state.accessToken);
-  localStorage.setItem("fleetscan.driver.chatId", state.chatId);
+  localStorage.removeItem("fleetscan.driver.accessToken");
+  localStorage.removeItem("fleetscan.driver.chatId");
   await login();
   await refreshAll();
 });
@@ -246,7 +242,7 @@ async function requestBlob(url, options = {}) {
 }
 
 async function login() {
-  if (!state.accessToken || !state.chatId) {
+  if (!state.accessToken) {
     state.sessionToken = "";
     localStorage.removeItem("fleetscan.driver.sessionToken");
     return;
@@ -255,7 +251,7 @@ async function login() {
   const response = await fetch(`${state.apiBase}/api/driver/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accessToken: state.accessToken, chatId: Number(state.chatId) }),
+    body: JSON.stringify({ code: state.accessToken }),
   });
 
   if (!response.ok) {
@@ -265,6 +261,8 @@ async function login() {
 
   const data = await response.json();
   state.sessionToken = data.sessionToken;
+  state.accessToken = ""; // one-time code is used up
+  els.accessTokenInput.value = "";
   localStorage.setItem("fleetscan.driver.sessionToken", state.sessionToken);
 }
 
@@ -483,7 +481,7 @@ async function bootstrap() {
         state.sessionToken = "";
         localStorage.removeItem("fleetscan.driver.sessionToken");
       }
-    } else if (state.accessToken && state.chatId) {
+    } else if (state.accessToken) {
       await login();
     }
   } catch (error) {

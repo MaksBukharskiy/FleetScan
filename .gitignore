@@ -43,3 +43,10 @@ out/
 **/venv/
 **/__pycache__/
 *.pyc
+
+# Secrets & runtime artefacts
+.env
+*.env
+!.env.example
+logs/
+*.log

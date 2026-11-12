@@ -5,14 +5,14 @@ import com.fleetScan.taxiService.domain.autopark.driver.UserRole;
 import com.fleetScan.taxiService.dto.WebSessionView;
 import com.fleetScan.taxiService.repository.autopark.DriverRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.util.List;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,30 +22,29 @@ public class WebAuthService {
 
     private static final long SESSION_TTL_MILLIS = 12L * 60L * 60L * 1000L;
 
-    private final String expectedAccessToken;
-    private final Long adminChatId;
+    private static final Set<UserRole> WEB_ADMIN_ROLES = EnumSet.of(UserRole.ADMIN, UserRole.OBSERVER);
+
     private final DriverRepository driverRepository;
+    private final LoginCodeService loginCodeService;
     private final Map<String, SessionData> sessions = new ConcurrentHashMap<>();
 
-    public WebAuthService(
-            DriverRepository driverRepository,
-            @Value("${fleetscan.web.access-token:}") String expectedAccessToken,
-            @Value("${fleetscan.web.admin-chat-id:}") String adminChatIdValue
-    ) {
+    public WebAuthService(DriverRepository driverRepository, LoginCodeService loginCodeService) {
         this.driverRepository = driverRepository;
-        this.expectedAccessToken = expectedAccessToken;
-        this.adminChatId = parseAdminChatId(adminChatIdValue);
+        this.loginCodeService = loginCodeService;
     }
 
-    public String login(String accessToken) {
-        String configuredToken = (expectedAccessToken == null || expectedAccessToken.isBlank()) ? "1234" : expectedAccessToken.trim();
-        if (accessToken == null || !configuredToken.equals(accessToken.trim())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid access token");
+    /** Log in with a one-time code from the Telegram bot (/web). Only fleet admins and observers. */
+    public String login(String code) {
+        Long chatId = loginCodeService.redeem(code);
+        Driver user = driverRepository.findByChatIdAndIsActiveTrue(chatId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found or inactive"));
+        if (!WEB_ADMIN_ROLES.contains(user.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin panel is available to fleet admins and observers only");
         }
 
-        Long effectiveAdminChatId = adminChatId != null ? adminChatId : resolveFallbackAdminChatId();
         String sessionToken = UUID.randomUUID().toString();
-        sessions.put(sessionToken, new SessionData(effectiveAdminChatId, Instant.now().toEpochMilli() + SESSION_TTL_MILLIS));
+        sessions.put(sessionToken, new SessionData(chatId, Instant.now().toEpochMilli() + SESSION_TTL_MILLIS));
+        log.info("Web admin login: chatId={}, role={}", chatId, user.getRole());
         return sessionToken;
     }
 
@@ -92,32 +91,6 @@ public class WebAuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid authorization header");
         }
         return authorizationHeader.substring(prefix.length()).trim();
-    }
-
-    private Long parseAdminChatId(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return Long.parseLong(value.trim());
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("Invalid fleetscan.web.admin-chat-id value", e);
-        }
-    }
-
-    private Long resolveFallbackAdminChatId() {
-        Long adminChatIdFromDirectory = driverRepository.findAllByRoleInAndIsActiveTrue(List.of(UserRole.ADMIN)).stream()
-                .map(Driver::getChatId)
-                .filter(chatId -> chatId != null)
-                .findFirst()
-                .orElse(null);
-
-        if (adminChatIdFromDirectory != null) {
-            return adminChatIdFromDirectory;
-        }
-
-        log.warn("Web admin chat id is not configured and no active ADMIN user with chatId found; using local fallback chatId=0");
-        return 0L;
     }
 
     private record SessionData(Long chatId, long expiresAtEpochMillis) {

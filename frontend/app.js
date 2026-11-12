@@ -368,7 +368,7 @@ async function login() {
   const response = await fetch(`${state.apiBase}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accessToken: state.accessToken }),
+    body: JSON.stringify({ code: state.accessToken }),
   });
 
   if (!response.ok) {

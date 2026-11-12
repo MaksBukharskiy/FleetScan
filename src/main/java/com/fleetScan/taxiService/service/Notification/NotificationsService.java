@@ -40,6 +40,15 @@ public class NotificationsService {
         sb.append("Status: ").append(vehicle.getStatus()).append("\n");
         sb.append("Reason: ").append(vehicle.getDecisionReason());
         
+        if (vehicle.getDamageSeverity() != null) {
+            sb.append("\nПовреждения: ").append(vehicle.getDamageSeverity());
+        }
+        if (vehicle.getDamageSummary() != null && !vehicle.getDamageSummary().isBlank()) {
+            sb.append("\n").append(vehicle.getDamageSummary());
+        }
+        if ("invalid_photo".equals(vehicle.getDecisionReason())) {
+            sb.append("\n⚠️ Фото непригодно для проверки, попросите водителя переснять.");
+        }
         if ("plate_mismatch".equals(vehicle.getDecisionReason())) {
             sb.append("\n⚠️ Номер не совпадает с зарегистрированным!");
         }

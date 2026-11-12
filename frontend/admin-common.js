@@ -1,6 +1,6 @@
 export const adminState = {
   apiBase: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
-  accessPassword: localStorage.getItem("fleetscan.admin.accessToken") || "",
+  accessPassword: "",
   sessionToken: localStorage.getItem("fleetscan.admin.sessionToken") || "",
   fromDate: localStorage.getItem("fleetscan.admin.fromDate") || "",
   toDate: localStorage.getItem("fleetscan.admin.toDate") || "",
@@ -124,16 +124,17 @@ export async function requestBlob(url, options = {}) {
   return response.blob();
 }
 
-export async function login(password) {
-  const token = (password ?? "").trim();
+// Login with a one-time code from the Telegram bot (/web). Codes are single-use, so they are never stored.
+export async function login(code) {
+  const token = (code ?? "").trim();
   if (!token) {
-    throw new Error("Введите пароль администратора");
+    throw new Error("Введите код из Telegram-бота (команда /web)");
   }
 
   const response = await fetch(`${adminState.apiBase}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accessToken: token }),
+    body: JSON.stringify({ code: token }),
   });
 
   if (!response.ok) {
@@ -142,9 +143,8 @@ export async function login(password) {
   }
 
   const data = await response.json();
-  adminState.accessPassword = token;
   adminState.sessionToken = data.sessionToken;
-  localStorage.setItem("fleetscan.admin.accessToken", adminState.accessPassword);
+  localStorage.removeItem("fleetscan.admin.accessToken");
   localStorage.setItem("fleetscan.admin.sessionToken", adminState.sessionToken);
 }
 
@@ -192,18 +192,7 @@ export async function ensureSession() {
 
 export async function restoreSession() {
   const hasSession = await ensureSession();
-  if (hasSession) {
-    return true;
-  }
-  if (!adminState.accessPassword) {
-    return false;
-  }
-  try {
-    await login(adminState.accessPassword);
-    return await ensureSession();
-  } catch {
-    return false;
-  }
+  return hasSession;
 }
 
 export function applyDateDefaults(fromInput, toInput) {
@@ -253,7 +242,7 @@ const I18N = {
     navAnalytics: "Диаграммы",
     navDriver: "Портал водителя",
     lang: "Язык",
-    placeholderAdminPassword: "Введите пароль",
+    placeholderAdminPassword: "Например, K7P2-QX9M",
   },
   en: {
     navOverview: "Overview",
@@ -264,7 +253,7 @@ const I18N = {
     navAnalytics: "Charts",
     navDriver: "Driver Portal",
     lang: "Language",
-    placeholderAdminPassword: "Enter password",
+    placeholderAdminPassword: "e.g. K7P2-QX9M",
   },
 };
 

@@ -4,6 +4,7 @@ from typing import Dict, Any, Tuple
 import numpy as np
 from PIL import Image
 
+from . import damage_llm
 from .lpr_detector import recognize_license
 
 
@@ -82,12 +83,17 @@ def _damage_metrics(image_path: str) -> Tuple[float, Dict[str, float]]:
     return float(score), details
 
 
-def assess_vehicle_condition(image_path: str) -> Dict[str, Any]:
+def _assess_heuristic(image_path: str) -> Dict[str, Any]:
+    """
+    Fallback when the LLM check is unavailable. This is NOT a damage detector:
+    it measures edge/texture energy, so busy backgrounds raise the score.
+    Results are marked damage_method="heuristic" and should be reviewed by a human.
+    """
     threshold = float(os.getenv("DAMAGE_THRESHOLD", "0.70"))
     score, details = _damage_metrics(image_path)
 
     condition = "defect" if score >= threshold else "ok"
-    # Уверенность — расстояние до порога
+    # Уверенность — расстояние до порога, но не выше 0.5: эвристике нельзя доверять
     if score >= threshold:
         confidence = min((score - threshold) / max(1e-6, (1.0 - threshold)), 1.0)
     else:
@@ -95,9 +101,44 @@ def assess_vehicle_condition(image_path: str) -> Dict[str, Any]:
 
     return {
         "condition": condition,
-        "condition_confidence": float(confidence),
+        "condition_confidence": float(min(confidence, 0.5)),
+        "damage_method": "heuristic",
         "damage_score": float(score),
+        "damage_severity": None,
+        "damages": [],
+        "damage_summary": None,
         "damage_details": details,
+    }
+
+
+SEVERITY_SCORE = {"none": 0.0, "minor": 0.33, "moderate": 0.66, "severe": 1.0}
+DEFECT_SEVERITIES = {
+    s.strip() for s in os.getenv("DAMAGE_DEFECT_SEVERITIES", "moderate,severe").split(",") if s.strip()
+}
+
+
+def assess_vehicle_condition(image_path: str) -> Dict[str, Any]:
+    llm = damage_llm.assess_damage(image_path)
+    if llm is None:
+        return _assess_heuristic(image_path)
+
+    severity = llm.get("overall_severity", "none")
+    if not llm.get("is_vehicle_photo", True) or llm.get("photo_quality") == "unusable":
+        condition = "invalid_photo"
+    elif severity in DEFECT_SEVERITIES:
+        condition = "defect"
+    else:
+        condition = "ok"
+
+    return {
+        "condition": condition,
+        "condition_confidence": float(llm.get("confidence", 0.0)),
+        "damage_method": "llm",
+        "damage_score": SEVERITY_SCORE.get(severity, 0.0),
+        "damage_severity": severity,
+        "damages": llm.get("damages", []),
+        "damage_summary": llm.get("summary"),
+        "photo_quality": llm.get("photo_quality"),
     }
 
 

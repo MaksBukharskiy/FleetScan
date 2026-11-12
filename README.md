@@ -34,10 +34,11 @@ FleetScan is a multi-tenant inspection platform:
 ### Core capabilities
 
 - **Telegram bot** — fleet onboarding, invites, photo intake, blacklist commands, weekly photo reminders
-- **AI plate recognition** — FastAPI service (EasyOCR + optional YOLO plate ROI), condition heuristic
+- **AI plate recognition** — FastAPI service (EasyOCR + YOLO plate ROI); Uzbek (`01 A 123 BC`, `01 123 ABC`) and Russian formats, configurable via `PLATE_COUNTRIES`
+- **AI damage assessment** — Claude vision returns damaged parts, type and severity (`none/minor/moderate/severe`) when `ANTHROPIC_API_KEY` is set; otherwise a rough image heuristic, flagged as `damage_method: heuristic`
 - **Smart decisions** — blacklist hit → blocked; plate mismatch / low confidence / damage → under review
 - **Admin web UI** — overview, incidents, blacklist, drivers, reports, analytics
-- **Driver portal** — login with access token + Telegram chat ID, profile, photos, detections
+- **Web login via Telegram** — `/web` in the bot issues a one-time 8-character code (5 min, single use); admins/observers get the admin panel, drivers get the portal
 - **Notifications** — security alerts to fleet admins on blocked / under-review detections
 - **Exports** — Excel reports for detections, incidents, and driver compliance
 
@@ -81,6 +82,7 @@ FleetScan/
 ```bash
 git clone <repo-url> FleetScan
 cd FleetScan
+cp .env.example .env   # set TELEGRAM_BOT_TOKEN (and optionally ANTHROPIC_API_KEY)
 docker compose up --build
 ```
 
@@ -92,12 +94,11 @@ docker compose up --build
 | AI health | http://localhost:8000/ |
 | MySQL | `localhost:3307` (db `fleetscan`) |
 
-**Default demo tokens (override in production):**
+**Web login:**
 
 | Purpose | Env / default |
 |---------|----------------|
-| Admin web login | `FLEETSCAN_WEB_ACCESS_TOKEN` → `1234` |
-| Driver web login | `FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN` → `driver-demo` (+ Telegram `chatId`) |
+| Admin / driver web login | Send `/web` to the bot, enter the one-time code on the site |
 
 Open the Telegram bot configured in your environment, send `/start`, create a fleet, invite a driver, and submit a vehicle photo.
 
@@ -110,9 +111,10 @@ Important environment variables (see `docker-compose.yml`):
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_NAME` | Bot credentials from BotFather |
 | `FLEETSCAN_AI_BASE_URL` | AI service URL (default `http://ai:8000` in Compose) |
 | `FLEETSCAN_AI_MIN_CONFIDENCE` | Min OCR confidence for auto-pass (default `0.80`) |
-| `FLEETSCAN_WEB_ACCESS_TOKEN` | Shared admin UI access token |
-| `FLEETSCAN_WEB_ADMIN_CHAT_ID` | Admin Telegram chat ID binding |
-| `FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN` | Shared driver UI access token |
+| `ANTHROPIC_API_KEY` | Enables Claude vision damage assessment (optional) |
+| `DAMAGE_MODEL` / `DAMAGE_EFFORT` | Claude model (default `claude-opus-5-5`) and effort (default `medium`) |
+| `DAMAGE_DEFECT_SEVERITIES` | Severities that send a car to review (default `moderate,severe`) |
+| `PLATE_COUNTRIES` | Plate formats to accept (default `UZ,RU`) |
 | `FLEETSCAN_UPLOAD_DIR` | Photo storage path |
 | `FLEETSCAN_CORS_ALLOWED_ORIGINS` | Allowed frontend origins |
 | `FLEETSCAN_API_BASE_URL` | API URL baked into frontend build |
@@ -126,7 +128,8 @@ For each Telegram photo (main inspection path):
 1. Store image → call AI `/analyze`
 2. Active **blacklist** match → `BLOCKED`
 3. Registered plate ≠ OCR plate → `UNDER_REVIEW`
-4. Low confidence or suspected damage → `UNDER_REVIEW`
+4. Photo is not a vehicle / unusable → `UNDER_REVIEW` (`invalid_photo`)
+5. Low confidence or damage of configured severity → `UNDER_REVIEW`
 5. Otherwise → `ACTIVE` (`auto_passed`)
 6. On `BLOCKED` / `UNDER_REVIEW` → notify fleet admins in Telegram
 
@@ -195,10 +198,11 @@ FleetScan — мультиарендная платформа инспекции
 ### Возможности
 
 - **Telegram-бот** — онбординг флота, инвайты, приём фото, команды blacklist, еженедельные напоминания
-- **AI-распознавание номеров** — FastAPI (EasyOCR + опционально YOLO), эвристика состояния
+- **AI-распознавание номеров** — FastAPI (EasyOCR + YOLO); узбекские (`01 A 123 BC`, `01 123 ABC`) и российские номера, настройка `PLATE_COUNTRIES`
+- **AI-оценка повреждений** — Claude vision: какие детали повреждены, тип и тяжесть, если задан `ANTHROPIC_API_KEY`; иначе грубая эвристика с пометкой `heuristic`
 - **Авторешения** — blacklist → blocked; несовпадение / низкая уверенность / повреждения → under review
 - **Админ UI** — обзор, инциденты, blacklist, водители, отчёты, аналитика
-- **Кабинет водителя** — вход по токену + Telegram chat ID, профиль, фото, детекции
+- **Вход на сайт через Telegram** — команда `/web` выдаёт одноразовый код (5 минут); админы и наблюдатели попадают в админку, водители — в кабинет
 - **Уведомления** — алерты админам при blocked / under review
 - **Экспорт** — Excel: детекции, инциденты, compliance водителей
 
@@ -242,6 +246,7 @@ FleetScan/
 ```bash
 git clone <repo-url> FleetScan
 cd FleetScan
+cp .env.example .env   # set TELEGRAM_BOT_TOKEN (and optionally ANTHROPIC_API_KEY)
 docker compose up --build
 ```
 
@@ -253,12 +258,11 @@ docker compose up --build
 | AI | http://localhost:8000/ |
 | MySQL | `localhost:3307` (БД `fleetscan`) |
 
-**Демо-токены по умолчанию (в проде обязательно сменить):**
+**Вход на сайт:**
 
 | Назначение | Env / default |
 |------------|---------------|
-| Вход в админку | `FLEETSCAN_WEB_ACCESS_TOKEN` → `1234` |
-| Вход водителя | `FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN` → `driver-demo` (+ Telegram `chatId`) |
+| Вход в админку / кабинет | Отправьте боту `/web`, введите одноразовый код на сайте |
 
 Откройте Telegram-бота из вашей конфигурации: `/start` → создайте флот → пригласите водителя → отправьте фото машины.
 
@@ -269,9 +273,8 @@ docker compose up --build
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_NAME` | Данные бота из BotFather |
 | `FLEETSCAN_AI_BASE_URL` | URL AI-сервиса |
 | `FLEETSCAN_AI_MIN_CONFIDENCE` | Порог уверенности OCR (по умолчанию `0.80`) |
-| `FLEETSCAN_WEB_ACCESS_TOKEN` | Общий токен админки |
-| `FLEETSCAN_WEB_ADMIN_CHAT_ID` | Привязка admin chat ID |
-| `FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN` | Общий токен кабинета водителя |
+| `ANTHROPIC_API_KEY` | Включает оценку повреждений через Claude (опционально) |
+| `PLATE_COUNTRIES` | Форматы номеров (по умолчанию `UZ,RU`) |
 | `FLEETSCAN_UPLOAD_DIR` | Путь хранения фото |
 | `FLEETSCAN_CORS_ALLOWED_ORIGINS` | Разрешённые origin фронтенда |
 | `FLEETSCAN_API_BASE_URL` | URL API при сборке фронтенда |
