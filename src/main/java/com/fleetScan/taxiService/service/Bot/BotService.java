@@ -12,6 +12,7 @@ import com.fleetScan.taxiService.service.blacklist.BlackListService;
 import com.fleetScan.taxiService.service.security.AccessService;
 import com.fleetScan.taxiService.service.security.LoginCodeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -41,6 +42,9 @@ public class BotService {
     private final AccessService accessService;
     private final BlackListService blackListService;
     private final LoginCodeService loginCodeService;
+
+    @Value("${telegram.bot.name}")
+    private String botName;
 
     private final Map<Long, String> userStates = new ConcurrentHashMap<>();
     private final Map<Long, UserRole> pendingRoleByChatId = new ConcurrentHashMap<>();
@@ -188,7 +192,7 @@ public class BotService {
 
         userStates.remove(adminChatId);
         pendingRoleByChatId.remove(adminChatId);
-        return "✅ Добавлен " + role + ": " + normalizedName + "\n🔗 Ссылка: t.me/FleetScanBot?start=" + inviteCode;
+        return "✅ Добавлен " + role + ": " + normalizedName + "\n🔗 Ссылка: t.me/" + botName + "?start=" + inviteCode;
     }
 
     public String handleInviteLink(Long chatId, String inviteCode) {

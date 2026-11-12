@@ -147,6 +147,21 @@ a { color: inherit; }
   letter-spacing: -0.01em;
 }
 
+/* Diesel wordmark: white Poppins on a green gradient plate */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px 5px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #3a6b4a 0%, #255b3d 100%);
+  color: #ffffff;
+  font-family: "Poppins", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
 .brand-badge {
   font-family: var(--mono);
   font-size: 0.78rem;

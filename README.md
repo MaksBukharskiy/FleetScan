@@ -1,8 +1,10 @@
-# FleetScan
+<p align="center"><img src="frontend/public/logo.svg" alt="Diesel" width="240" /></p>
+
+# Diesel
 
 **AI-powered vehicle inspection for taxi and fleet operators.**
 
-FleetScan helps fleet owners collect driver vehicle photos, recognize license plates with AI, check blacklists, and triage incidents — via Telegram and a web dashboard.
+Diesel helps fleet owners collect driver vehicle photos, recognize license plates with AI, check blacklists, and triage incidents — via Telegram and a web dashboard.
 
 ---
 
@@ -14,7 +16,7 @@ Taxi and fleet operators need regular vehicle checks: photos, plate verification
 
 ### The product
 
-FleetScan is a multi-tenant inspection platform:
+Diesel is a multi-tenant inspection platform:
 
 1. A fleet admin creates a fleet in Telegram and invites drivers / observers.
 2. Drivers send vehicle photos (front, rear, interior, dashboard, etc.).
@@ -25,7 +27,7 @@ FleetScan is a multi-tenant inspection platform:
 
 ### Who it is for
 
-| Role | How they use FleetScan |
+| Role | How they use Diesel |
 |------|------------------------|
 | **Fleet admin** | Create fleet, invite users, manage blacklist, review incidents, export reports |
 | **Driver (operator)** | Send inspection photos via Telegram (or web portal), register vehicle plate/model |
@@ -64,7 +66,7 @@ Telegram ──► Spring Boot API (Java 21) ──► MySQL 8
 ### Repository layout
 
 ```
-FleetScan/
+Diesel/
 ├── docker-compose.yml          # Full stack: db, app, ai, frontend
 ├── Dockerfile                  # Spring Boot app
 ├── frontend/                   # Admin + driver static UI
@@ -80,8 +82,8 @@ FleetScan/
 **Requirements:** Docker & Docker Compose.
 
 ```bash
-git clone <repo-url> FleetScan
-cd FleetScan
+git clone <repo-url> Diesel
+cd Diesel
 cp .env.example .env   # set TELEGRAM_BOT_TOKEN (and optionally ANTHROPIC_API_KEY)
 docker compose up --build
 ```
@@ -178,7 +180,7 @@ Early-stage startup prototype. Product and APIs may change quickly.
 
 ### Продукт
 
-FleetScan — мультиарендная платформа инспекции транспорта:
+Diesel — мультиарендная платформа инспекции транспорта:
 
 1. Админ парка создаёт флот в Telegram и приглашает водителей / наблюдателей.
 2. Водители присылают фото машины (перед, зад, салон, приборка и т.д.).
@@ -228,7 +230,7 @@ Telegram ──► Spring Boot API (Java 21) ──► MySQL 8
 ### Структура репозитория
 
 ```
-FleetScan/
+Diesel/
 ├── docker-compose.yml          # Стек: db, app, ai, frontend
 ├── Dockerfile                  # Spring Boot
 ├── frontend/                   # Админка + кабинет водителя
@@ -244,8 +246,8 @@ FleetScan/
 **Нужно:** Docker и Docker Compose.
 
 ```bash
-git clone <repo-url> FleetScan
-cd FleetScan
+git clone <repo-url> Diesel
+cd Diesel
 cp .env.example .env   # set TELEGRAM_BOT_TOKEN (and optionally ANTHROPIC_API_KEY)
 docker compose up --build
 ```
