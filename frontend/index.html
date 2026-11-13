@@ -140,13 +140,25 @@
     <section class="l-section l-container">
       <p class="eyebrow" data-t="cmp.eyebrow">Сравнение</p>
       <h2 class="l-h2" data-t="cmp.title">чат с фото против Diesel</h2>
-      <div class="l-compare">
-        <div class="l-compare-head"><span data-t="cmp.old">Фото в общем чате</span><span data-t="cmp.new">Diesel</span></div>
-        <div class="l-compare-row"><span data-t="cmp.r1a">Номер сверяют на глаз</span><span data-t="cmp.r1b">Номер читает ИИ и сверяет с регистрацией</span></div>
-        <div class="l-compare-row"><span data-t="cmp.r2a">Повреждения замечают, когда уже поздно</span><span data-t="cmp.r2b">Каждое фото проверяется на 6 типов повреждений</span></div>
-        <div class="l-compare-row"><span data-t="cmp.r3a">Фото теряются в переписке</span><span data-t="cmp.r3b">История по каждой машине и водителю</span></div>
-        <div class="l-compare-row"><span data-t="cmp.r4a">Чёрный список в голове у менеджера</span><span data-t="cmp.r4b">Блокировка и мгновенное уведомление</span></div>
-        <div class="l-compare-row"><span data-t="cmp.r5a">Отчёты собирают вручную</span><span data-t="cmp.r5b">Выгрузка в Excel в один клик</span></div>
+      <div class="cmp reveal" id="compare">
+        <div class="cmp-head cmp-old-head">
+          <span class="cmp-tag" data-t="cmp.oldTag">как сейчас</span>
+          <span class="cmp-title" data-t="cmp.old">Фото в общем чате</span>
+        </div>
+        <div class="cmp-head cmp-new-head">
+          <span class="cmp-tag" data-t="cmp.newTag">с Diesel</span>
+          <span class="cmp-title" data-t="cmp.new">Diesel</span>
+        </div>
+        <div class="cmp-cell cmp-old" style="--i:0"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></span><span><span class="strike" data-t="cmp.r1a">Номер сверяют на глаз</span></span></div>
+        <div class="cmp-cell cmp-new" style="--i:0"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span><span data-t="cmp.r1b">Номер читает ИИ и сверяет с регистрацией</span></div>
+        <div class="cmp-cell cmp-old" style="--i:1"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></span><span><span class="strike" data-t="cmp.r2a">Повреждения замечают, когда уже поздно</span></span></div>
+        <div class="cmp-cell cmp-new" style="--i:1"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span><span data-t="cmp.r2b">Каждое фото проверяется на 6 типов повреждений</span></div>
+        <div class="cmp-cell cmp-old" style="--i:2"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></span><span><span class="strike" data-t="cmp.r3a">Фото теряются в переписке</span></span></div>
+        <div class="cmp-cell cmp-new" style="--i:2"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span><span data-t="cmp.r3b">История по каждой машине и водителю</span></div>
+        <div class="cmp-cell cmp-old" style="--i:3"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></span><span><span class="strike" data-t="cmp.r4a">Чёрный список в голове у менеджера</span></span></div>
+        <div class="cmp-cell cmp-new" style="--i:3"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span><span data-t="cmp.r4b">Блокировка и мгновенное уведомление</span></div>
+        <div class="cmp-cell cmp-old" style="--i:4"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></span><span><span class="strike" data-t="cmp.r5a">Отчёты собирают вручную</span></span></div>
+        <div class="cmp-cell cmp-new" style="--i:4"><span class="cmp-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span><span data-t="cmp.r5b">Выгрузка в Excel в один клик</span></div>
       </div>
     </section>
 
@@ -237,15 +249,71 @@
     </section>
 
     <!-- ============ faq ============ -->
-    <section class="l-section l-container">
-      <p class="eyebrow">FAQ</p>
-      <h2 class="l-h2" data-t="faq.title">частые вопросы</h2>
-      <div class="l-faq">
-        <details><summary data-t="faq.q1">Нужно ли водителям ставить приложение?</summary><p data-t="faq.a1">Нет. Всё работает через Telegram-бота: водитель отправляет фото так же, как в обычный чат.</p></details>
-        <details><summary data-t="faq.q2">Какие номера распознаются?</summary><p data-t="faq.a2">Узбекские номера физлиц (01 A 123 BC) и юрлиц (01 123 ABC) всех 14 регионов, а также российские.</p></details>
-        <details><summary data-t="faq.q3">Как определяются повреждения?</summary><p data-t="faq.a3">Локальная нейросеть ищет вмятины, царапины, трещины, разбитые стёкла и фары, спущенные колёса. Спорные случаи дополнительно проверяет большая модель ИИ, а окончательное решение остаётся за менеджером.</p></details>
-        <details><summary data-t="faq.q4">Где хранятся фото?</summary><p data-t="faq.a4">В тарифе Enterprise Diesel устанавливается на ваши серверы, и данные не покидают вашу инфраструктуру.</p></details>
-        <details><summary data-t="faq.q5">Сколько длится подключение?</summary><p data-t="faq.a5">Создать автопарк и пригласить водителей можно за один вечер. На пилоте помогаем лично.</p></details>
+    <section class="l-section l-container" id="faq">
+      <div class="faq">
+        <div class="faq-intro">
+          <p class="eyebrow">FAQ</p>
+          <h2 class="l-h2" data-t="faq.title">частые вопросы</h2>
+          <p class="l-sub" data-t="faq.sub">Не нашли ответ? Напишите нам — расскажем, как Diesel будет работать в вашем автопарке.</p>
+          <a class="btn btn-secondary" href="#contacts" data-t="faq.ask">Задать вопрос</a>
+        </div>
+        <div class="faq-list">
+          <div class="faq-item">
+            <h3 class="faq-h">
+              <button class="faq-q" type="button" id="faq-q1" aria-expanded="false" aria-controls="faq-a1">
+                <span data-t="faq.q1">Нужно ли водителям ставить приложение?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a1" role="region" aria-labelledby="faq-q1">
+              <div class="faq-a-inner"><p data-t="faq.a1">Нет. Всё работает через Telegram-бота: водитель отправляет фото так же, как в обычный чат.</p></div>
+            </div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-h">
+              <button class="faq-q" type="button" id="faq-q2" aria-expanded="false" aria-controls="faq-a2">
+                <span data-t="faq.q2">Какие номера распознаются?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a2" role="region" aria-labelledby="faq-q2">
+              <div class="faq-a-inner"><p data-t="faq.a2">Узбекские номера физлиц (01 A 123 BC) и юрлиц (01 123 ABC) всех 14 регионов, а также российские.</p></div>
+            </div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-h">
+              <button class="faq-q" type="button" id="faq-q3" aria-expanded="false" aria-controls="faq-a3">
+                <span data-t="faq.q3">Как определяются повреждения?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a3" role="region" aria-labelledby="faq-q3">
+              <div class="faq-a-inner"><p data-t="faq.a3">Локальная нейросеть ищет вмятины, царапины, трещины, разбитые стёкла и фары, спущенные колёса. Спорные случаи дополнительно проверяет большая модель ИИ, а окончательное решение остаётся за менеджером.</p></div>
+            </div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-h">
+              <button class="faq-q" type="button" id="faq-q4" aria-expanded="false" aria-controls="faq-a4">
+                <span data-t="faq.q4">Где хранятся фото?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a4" role="region" aria-labelledby="faq-q4">
+              <div class="faq-a-inner"><p data-t="faq.a4">В тарифе Enterprise Diesel устанавливается на ваши серверы, и данные не покидают вашу инфраструктуру.</p></div>
+            </div>
+          </div>
+          <div class="faq-item">
+            <h3 class="faq-h">
+              <button class="faq-q" type="button" id="faq-q5" aria-expanded="false" aria-controls="faq-a5">
+                <span data-t="faq.q5">Сколько длится подключение?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </button>
+            </h3>
+            <div class="faq-a" id="faq-a5" role="region" aria-labelledby="faq-q5">
+              <div class="faq-a-inner"><p data-t="faq.a5">Создать автопарк и пригласить водителей можно за один вечер. На пилоте помогаем лично.</p></div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 

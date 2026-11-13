@@ -6,8 +6,8 @@
 
 :root {
   /* brand */
-  --brand-900: #1d4a31;
-  --brand-700: #256b45;
+  --brand-900: #23533a;
+  --brand-700: #2d6a4a;
   --brand-600: #2f7d52;
   --brand-500: #3a9763;
   --brand-300: #8fd1a7;
@@ -15,15 +15,15 @@
   --teal-600: #1f7f78;
   --logo-from: #3a6b4a;
   --logo-to: #255b3d;
-  --brand-gradient: linear-gradient(100deg, #2f8f57 0%, #1f8a74 55%, #2a7a8f 100%);
+  --brand-gradient: linear-gradient(100deg, #34734f 0%, #3a7468 55%, #4a6f80 100%);
 
   /* surfaces (light) */
-  --bg: #f2f8f4;
-  --bg-gradient: linear-gradient(180deg, #f6fbf8 0%, #e6f3eb 100%);
-  --dots: rgba(37, 107, 69, 0.07);
+  --bg: #f4f6f5;
+  --bg-gradient: linear-gradient(180deg, #f7f9f8 0%, #edf2ef 100%);
+  --dots: rgba(45, 90, 66, 0.06);
   --panel: #ffffff;
   --panel-strong: #ffffff;
-  --panel-muted: #f5faf7;
+  --panel-muted: #f6f8f7;
   --field: #ffffff;
   --line: rgba(20, 52, 34, 0.12);
   --line-strong: rgba(20, 52, 34, 0.2);
@@ -35,12 +35,12 @@
   --accent-hover: var(--brand-900);
   --accent-text: #ffffff;            /* text on accent fills */
   --accent-ink: var(--brand-700);    /* accent-coloured text and icons */
-  --surface: rgba(47, 125, 82, 0.08);
-  --surface-2: rgba(47, 125, 82, 0.14);
-  --focus: 0 0 0 3px rgba(47, 125, 82, 0.22);
+  --surface: rgba(45, 106, 74, 0.06);
+  --surface-2: rgba(45, 106, 74, 0.11);
+  --focus: 0 0 0 3px rgba(45, 106, 74, 0.22);
 
-  --danger: #c2372f;
-  --danger-bg: rgba(194, 55, 47, 0.1);
+  --danger: #b5483f;
+  --danger-bg: rgba(181, 72, 63, 0.09);
   --warning: #b86e00;
   --warning-bg: rgba(184, 110, 0, 0.1);
   --success: var(--brand-600);
@@ -74,8 +74,8 @@
      surfaces and hairline borders, the accent is a soft mint rather than neon. */
   --bg: #0c100e;
   --bg-gradient:
-    radial-gradient(1200px 600px at 15% -10%, rgba(76, 175, 120, 0.13), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(56, 160, 170, 0.08), transparent 55%),
+    radial-gradient(1200px 600px at 15% -10%, rgba(90, 160, 120, 0.09), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(80, 140, 150, 0.05), transparent 55%),
     linear-gradient(180deg, #0e1311 0%, #0b0f0d 100%);
   --dots: rgba(220, 240, 228, 0.035);
   --panel: #141a17;
@@ -88,23 +88,23 @@
   --muted: #a6b5ac;
   --subtle: #74857b;
 
-  --accent: #2f9d63;
-  --accent-hover: #38b072;
+  --accent: #2f7f57;
+  --accent-hover: #379063;
   --accent-text: #ffffff;
-  --accent-ink: #72d6a0;
-  --surface: rgba(114, 214, 160, 0.08);
-  --surface-2: rgba(114, 214, 160, 0.14);
-  --focus: 0 0 0 3px rgba(114, 214, 160, 0.28);
-  --brand-gradient: linear-gradient(100deg, #8be3b2 0%, #5fd0bf 50%, #7cc4ea 100%);
-  --brand-500: #5cc98e;
+  --accent-ink: #8fc9a7;
+  --surface: rgba(143, 201, 167, 0.07);
+  --surface-2: rgba(143, 201, 167, 0.12);
+  --focus: 0 0 0 3px rgba(143, 201, 167, 0.28);
+  --brand-gradient: linear-gradient(100deg, #a9d8bc 0%, #8fc6bd 50%, #9fbfd2 100%);
+  --brand-500: #7dbb97;
   --logo-from: #3d7a52;
   --logo-to: #285f40;
 
-  --danger: #ff8a80;
-  --danger-bg: rgba(255, 138, 128, 0.12);
+  --danger: #e59a92;
+  --danger-bg: rgba(229, 154, 146, 0.1);
   --warning: #f5c26b;
   --warning-bg: rgba(245, 194, 107, 0.12);
-  --success: #72d6a0;
+  --success: #8fc9a7;
 
   --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);

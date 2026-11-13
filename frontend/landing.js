@@ -13,6 +13,8 @@ const PRICE_PER_CAR = 25000;
 
 const T = {
   ru: {
+    "cmp.oldTag": "как сейчас", "cmp.newTag": "с Diesel",
+    "faq.sub": "Не нашли ответ? Напишите нам — расскажем, как Diesel будет работать в вашем автопарке.", "faq.ask": "Задать вопрос",
     "nav.how": "Как работает", "nav.features": "Возможности", "nav.pricing": "Тарифы", "nav.contacts": "Контакты", "nav.login": "Войти",
     "hero.pill": "Пилот в Ташкенте · ранний доступ",
     "hero.t1": "Diesel — это", "hero.t2": "ИИ-осмотр автопарка", "hero.t3": "прямо в Telegram",
@@ -77,6 +79,8 @@ const T = {
   },
 
   uz: {
+    "cmp.oldTag": "hozir qanday", "cmp.newTag": "Diesel bilan",
+    "faq.sub": "Javob topmadingizmi? Bizga yozing — Diesel avtoparkingizda qanday ishlashini aytib beramiz.", "faq.ask": "Savol berish",
     "nav.how": "Qanday ishlaydi", "nav.features": "Imkoniyatlar", "nav.pricing": "Tariflar", "nav.contacts": "Kontaktlar", "nav.login": "Kirish",
     "hero.pill": "Toshkentda pilot · erta kirish",
     "hero.t1": "Diesel —", "hero.t2": "avtopark uchun SI‑ko‘rik", "hero.t3": "to‘g‘ridan-to‘g‘ri Telegramda",
@@ -141,6 +145,8 @@ const T = {
   },
 
   en: {
+    "cmp.oldTag": "today", "cmp.newTag": "with Diesel",
+    "faq.sub": "Didn't find an answer? Message us — we'll explain how Diesel would work for your fleet.", "faq.ask": "Ask a question",
     "nav.how": "How it works", "nav.features": "Features", "nav.pricing": "Pricing", "nav.contacts": "Contacts", "nav.login": "Log in",
     "hero.pill": "Pilot in Tashkent · early access",
     "hero.t1": "Diesel is", "hero.t2": "AI fleet inspection", "hero.t3": "right inside Telegram",
@@ -252,7 +258,46 @@ document.querySelectorAll(".lang-switch button").forEach((b) => {
   b.addEventListener("click", () => {
     lang = b.dataset.lang;
     try { localStorage.setItem("fleetscan.locale", lang); } catch { /* ignore */ }
-    applyLang();
+    // ---- comparison: animate rows when the block scrolls into view ----
+(function initCompare() {
+  const block = document.getElementById("compare");
+  if (!block || !("IntersectionObserver" in window)) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  block.classList.add("anim");
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        block.classList.add("in-view");
+        io.disconnect();
+      }
+    }
+  }, { threshold: 0.1, rootMargin: "0px 0px -10% 0px" });
+  io.observe(block);
+})();
+
+// ---- FAQ accordion (buttons with aria-expanded; answers hidden from AT when closed) ----
+(function initFaq() {
+  const items = [...document.querySelectorAll(".faq-item")];
+  const setOpen = (item, open) => {
+    item.classList.toggle("open", open);
+    item.querySelector(".faq-q").setAttribute("aria-expanded", String(open));
+  };
+  items.forEach((item, idx) => {
+    const btn = item.querySelector(".faq-q");
+    btn.addEventListener("click", () => setOpen(item, !item.classList.contains("open")));
+    // Arrow keys move between questions, Home/End jump to first/last.
+    btn.addEventListener("keydown", (e) => {
+      const go = (j) => { e.preventDefault(); items[(j + items.length) % items.length].querySelector(".faq-q").focus(); };
+      if (e.key === "ArrowDown") go(idx + 1);
+      else if (e.key === "ArrowUp") go(idx - 1);
+      else if (e.key === "Home") go(0);
+      else if (e.key === "End") go(items.length - 1);
+    });
+  });
+  if (items[0]) setOpen(items[0], true);
+})();
+
+applyLang();
   });
 });
 
@@ -364,5 +409,44 @@ function playDemo() {
   }
 }
 $("chatReplay").addEventListener("click", playDemo);
+
+// ---- comparison: animate rows when the block scrolls into view ----
+(function initCompare() {
+  const block = document.getElementById("compare");
+  if (!block || !("IntersectionObserver" in window)) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  block.classList.add("anim");
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        block.classList.add("in-view");
+        io.disconnect();
+      }
+    }
+  }, { threshold: 0.1, rootMargin: "0px 0px -10% 0px" });
+  io.observe(block);
+})();
+
+// ---- FAQ accordion (buttons with aria-expanded; answers hidden from AT when closed) ----
+(function initFaq() {
+  const items = [...document.querySelectorAll(".faq-item")];
+  const setOpen = (item, open) => {
+    item.classList.toggle("open", open);
+    item.querySelector(".faq-q").setAttribute("aria-expanded", String(open));
+  };
+  items.forEach((item, idx) => {
+    const btn = item.querySelector(".faq-q");
+    btn.addEventListener("click", () => setOpen(item, !item.classList.contains("open")));
+    // Arrow keys move between questions, Home/End jump to first/last.
+    btn.addEventListener("keydown", (e) => {
+      const go = (j) => { e.preventDefault(); items[(j + items.length) % items.length].querySelector(".faq-q").focus(); };
+      if (e.key === "ArrowDown") go(idx + 1);
+      else if (e.key === "ArrowUp") go(idx - 1);
+      else if (e.key === "Home") go(0);
+      else if (e.key === "End") go(items.length - 1);
+    });
+  });
+  if (items[0]) setOpen(items[0], true);
+})();
 
 applyLang();
