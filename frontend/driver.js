@@ -11,7 +11,7 @@ function currentLocale() {
 }
 
 function currentTheme() {
-  return localStorage.getItem("fleetscan.theme") === "light" ? "light" : "dark";
+  return localStorage.getItem("fleetscan.theme") === "dark" ? "dark" : "light";
 }
 
 function applyTheme(theme = currentTheme()) {
@@ -86,8 +86,8 @@ function applyLocale() {
     themeWrapper.innerHTML = `
       <span>${currentLocale() === "en" ? "Theme:" : "Тема:"}</span>
       <select id="themeSelect" style="margin-left:6px; min-width:92px;">
-        <option value="dark">${currentLocale() === "en" ? "Dark" : "Темная"}</option>
         <option value="light">${currentLocale() === "en" ? "Light" : "Светлая"}</option>
+        <option value="dark">${currentLocale() === "en" ? "Dark" : "Тёмная"}</option>
       </select>
     `;
     meta.appendChild(themeWrapper);

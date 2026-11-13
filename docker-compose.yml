@@ -36,6 +36,7 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE_URL: ${FLEETSCAN_API_BASE_URL:-http://localhost:8080}
+        VITE_TELEGRAM_BOT_NAME: ${TELEGRAM_BOT_NAME:-}
     depends_on:
       - app
     ports:
