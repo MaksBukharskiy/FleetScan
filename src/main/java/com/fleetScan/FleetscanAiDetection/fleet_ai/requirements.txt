@@ -8,3 +8,5 @@ pillow
 numpy
 opencv-python
 ultralytics
+anthropic>=2.8,<3
+transformers>=5,<6

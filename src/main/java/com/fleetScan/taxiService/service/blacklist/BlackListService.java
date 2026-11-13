@@ -99,8 +99,19 @@ public class BlackListService {
         if (plateNumber == null) {
             return "";
         }
-        return plateNumber
-                .replaceAll("[^A-Za-zА-Яа-я0-9]", "")
-                .toUpperCase();
+        String upper = plateNumber.toUpperCase();
+        StringBuilder sb = new StringBuilder(upper.length());
+        for (char ch : upper.toCharArray()) {
+            int idx = CYRILLIC_LOOKALIKES.indexOf(ch);
+            char latin = idx >= 0 ? LATIN_EQUIVALENTS.charAt(idx) : ch;
+            if ((latin >= 'A' && latin <= 'Z') || (latin >= '0' && latin <= '9')) {
+                sb.append(latin);
+            }
+        }
+        return sb.toString();
     }
+
+    // Plates are compared in Latin: OCR returns Latin, drivers often type Cyrillic look-alikes.
+    private static final String CYRILLIC_LOOKALIKES = "АВЕКМНОРСТУХ";
+    private static final String LATIN_EQUIVALENTS = "ABEKMHOPCTYX";
 }

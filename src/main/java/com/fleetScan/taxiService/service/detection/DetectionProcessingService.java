@@ -53,6 +53,9 @@ public class DetectionProcessingService {
             reason = "plate_mismatch";
             log.warn("⚠️ Несоответствие номера: распознан={}, зарегистрирован={}, chatId={}", 
                     normalizedPlate, driverPlate, sourceChatId);
+        } else if ("invalid_photo".equalsIgnoreCase(ai.condition())) {
+            status = VehicleStatus.UNDER_REVIEW;
+            reason = "invalid_photo";
         } else if (ai.plateConfidence() < minConfidence || "defect".equalsIgnoreCase(ai.condition())) {
             status = VehicleStatus.UNDER_REVIEW;
             reason = ai.plateConfidence() < minConfidence ? "low_confidence" : "damage_detected";
@@ -71,7 +74,14 @@ public class DetectionProcessingService {
         detectedVehicle.setSourceChatId(sourceChatId);
         detectedVehicle.setImagePath(imagePath);
         detectedVehicle.setBlackList(blackListHit.orElse(null));
+        detectedVehicle.setDamageMethod(ai.damageMethod());
+        detectedVehicle.setDamageSeverity(ai.damageSeverity());
+        detectedVehicle.setDamageSummary(truncate(ai.damageSummary(), 1024));
 
         return detectedVehicleRepository.save(detectedVehicle);
+    }
+
+    private static String truncate(String value, int max) {
+        return value == null || value.length() <= max ? value : value.substring(0, max);
     }
 }

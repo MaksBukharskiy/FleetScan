@@ -5,9 +5,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DEBIAN_FRONTEND=noninteractive
 
 # Установка системных зависимостей для OpenCV и других библиотек
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# HTTPS mirror + retries: plain-HTTP Debian downloads get 403 on some networks
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get -o Acquire::Retries=3 update && apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
     libgl1 \
-    libglib2.0-0 \
+    libglib2.0-0t64 \
     libsm6 \
     libxext6 \
     libxrender-dev \

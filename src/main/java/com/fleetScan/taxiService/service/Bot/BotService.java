@@ -10,7 +10,9 @@ import com.fleetScan.taxiService.repository.autopark.car.CarPhotoRepository;
 import com.fleetScan.taxiService.repository.autopark.DriverRepository;
 import com.fleetScan.taxiService.service.blacklist.BlackListService;
 import com.fleetScan.taxiService.service.security.AccessService;
+import com.fleetScan.taxiService.service.security.LoginCodeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -39,6 +41,10 @@ public class BotService {
     private final CarPhotoRepository carPhotoRepository;
     private final AccessService accessService;
     private final BlackListService blackListService;
+    private final LoginCodeService loginCodeService;
+
+    @Value("${telegram.bot.name}")
+    private String botName;
 
     private final Map<Long, String> userStates = new ConcurrentHashMap<>();
     private final Map<Long, UserRole> pendingRoleByChatId = new ConcurrentHashMap<>();
@@ -103,6 +109,9 @@ public class BotService {
         }
         if ("/whoami".equals(text)) {
             return whoAmI(chatId);
+        }
+        if ("/web".equals(text)) {
+            return issueWebLoginCode(chatId);
         }
 
         return "Неизвестная команда. Используйте /help";
@@ -183,7 +192,7 @@ public class BotService {
 
         userStates.remove(adminChatId);
         pendingRoleByChatId.remove(adminChatId);
-        return "✅ Добавлен " + role + ": " + normalizedName + "\n🔗 Ссылка: t.me/FleetScanBot?start=" + inviteCode;
+        return "✅ Добавлен " + role + ": " + normalizedName + "\n🔗 Ссылка: t.me/" + botName + "?start=" + inviteCode;
     }
 
     public String handleInviteLink(Long chatId, String inviteCode) {
@@ -208,7 +217,7 @@ public class BotService {
         pendingDriversByChatId.put(chatId, user);
         
         return "🎉 Регистрация завершена. Ваша роль: " + user.getRole() + 
-               "\n\n🚗 Теперь зарегистрируйте ваш автомобиль.\nВведите номер автомобиля (например, А123БВ777):";
+               "\n\n🚗 Теперь зарегистрируйте ваш автомобиль.\nВведите номер автомобиля (например, 01A123BC или 01123ABC):";
     }
 
     public void handlePhoto(Long chatId, Message message, String storedImagePath) {
@@ -302,7 +311,7 @@ public class BotService {
         }
         userStates.put(chatId, AWAITING_VEHICLE_PLATE);
         pendingDriversByChatId.put(chatId, user);
-        return "🚗 Введите номер автомобиля (например, А123БВ777):";
+        return "🚗 Введите номер автомобиля (например, 01A123BC или 01123ABC):";
     }
 
     public String handleVehiclePlateInput(Long chatId, String text) {
@@ -315,9 +324,9 @@ public class BotService {
             }
         }
 
-        String plate = text.trim().toUpperCase();
+        String plate = blackListService.normalizePlate(text);
         if (plate.length() < 5 || plate.length() > 16) {
-            return "❌ Неверный формат номера. Введите номер в формате А123БВ777:";
+            return "❌ Неверный формат номера. Пример: 01A123BC или 01123ABC:";
         }
 
         user.setVehiclePlate(plate);
@@ -396,6 +405,17 @@ public class BotService {
                 .orElse("❌ Пользователь не зарегистрирован.");
     }
 
+    public String issueWebLoginCode(Long chatId) {
+        Optional<Driver> user = driverRepository.findByChatIdAndIsActiveTrue(chatId);
+        if (user.isEmpty()) {
+            return "❌ Вы не зарегистрированы в автопарке.";
+        }
+        String code = loginCodeService.issue(chatId);
+        String where = user.get().getRole() == UserRole.OPERATOR ? "портал водителя" : "панель администратора";
+        return "🔐 Код для входа в " + where + ": " + code
+                + "\nДействует 5 минут, одноразовый. Никому его не пересылайте.";
+    }
+
     private String help(Long chatId) {
         UserRole role = driverRepository.findByChatId(chatId).map(Driver::getRole).orElse(null);
         if (role == null) {
@@ -412,6 +432,7 @@ public class BotService {
                     /blacklist_remove <номер>
                     /status <номер>
                     /whoami
+                    /web - Код для входа на сайт
                     """;
         }
         if (role == UserRole.OPERATOR) {
@@ -423,6 +444,7 @@ public class BotService {
                     /blacklist_remove <номер>
                     /status <номер>
                     /whoami
+                    /web - Код для входа на сайт
                     
                     Или просто отправьте фото автомобиля.
                     """;
@@ -431,6 +453,7 @@ public class BotService {
                 Команды:
                 /status <номер>
                 /whoami
+                /web - Код для входа на сайт
                 """;
     }
 }

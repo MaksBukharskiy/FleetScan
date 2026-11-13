@@ -1,8 +1,10 @@
-# FleetScan
+<p align="center"><img src="frontend/public/logo.svg" alt="Diesel" width="240" /></p>
+
+# Diesel
 
 **AI-powered vehicle inspection for taxi and fleet operators.**
 
-FleetScan helps fleet owners collect driver vehicle photos, recognize license plates with AI, check blacklists, and triage incidents — via Telegram and a web dashboard.
+Diesel helps fleet owners collect driver vehicle photos, recognize license plates with AI, check blacklists, and triage incidents — via Telegram and a web dashboard.
 
 ---
 
@@ -14,7 +16,7 @@ Taxi and fleet operators need regular vehicle checks: photos, plate verification
 
 ### The product
 
-FleetScan is a multi-tenant inspection platform:
+Diesel is a multi-tenant inspection platform:
 
 1. A fleet admin creates a fleet in Telegram and invites drivers / observers.
 2. Drivers send vehicle photos (front, rear, interior, dashboard, etc.).
@@ -25,7 +27,7 @@ FleetScan is a multi-tenant inspection platform:
 
 ### Who it is for
 
-| Role | How they use FleetScan |
+| Role | How they use Diesel |
 |------|------------------------|
 | **Fleet admin** | Create fleet, invite users, manage blacklist, review incidents, export reports |
 | **Driver (operator)** | Send inspection photos via Telegram (or web portal), register vehicle plate/model |
@@ -34,10 +36,11 @@ FleetScan is a multi-tenant inspection platform:
 ### Core capabilities
 
 - **Telegram bot** — fleet onboarding, invites, photo intake, blacklist commands, weekly photo reminders
-- **AI plate recognition** — FastAPI service (EasyOCR + optional YOLO plate ROI), condition heuristic
+- **AI plate recognition** — FastAPI service (EasyOCR + YOLO plate ROI); Uzbek (`01 A 123 BC`, `01 123 ABC`) and Russian formats, configurable via `PLATE_COUNTRIES`
+- **Hybrid damage assessment** — a free local detector (RT-DETRv2, Apache-2.0) checks every photo offline; only unclear cases (low-score or severe findings, plus a 5% audit sample of clean photos) go to Claude Haiku (~$0.0005/photo) with the local findings as hints. See [Damage detection](#damage-detection)
 - **Smart decisions** — blacklist hit → blocked; plate mismatch / low confidence / damage → under review
 - **Admin web UI** — overview, incidents, blacklist, drivers, reports, analytics
-- **Driver portal** — login with access token + Telegram chat ID, profile, photos, detections
+- **Web login via Telegram** — `/web` in the bot issues a one-time 8-character code (5 min, single use); admins/observers get the admin panel, drivers get the portal
 - **Notifications** — security alerts to fleet admins on blocked / under-review detections
 - **Exports** — Excel reports for detections, incidents, and driver compliance
 
@@ -63,7 +66,7 @@ Telegram ──► Spring Boot API (Java 21) ──► MySQL 8
 ### Repository layout
 
 ```
-FleetScan/
+Diesel/
 ├── docker-compose.yml          # Full stack: db, app, ai, frontend
 ├── Dockerfile                  # Spring Boot app
 ├── frontend/                   # Admin + driver static UI
@@ -79,8 +82,9 @@ FleetScan/
 **Requirements:** Docker & Docker Compose.
 
 ```bash
-git clone <repo-url> FleetScan
-cd FleetScan
+git clone <repo-url> Diesel
+cd Diesel
+cp .env.example .env   # set TELEGRAM_BOT_TOKEN (and optionally ANTHROPIC_API_KEY)
 docker compose up --build
 ```
 
@@ -92,12 +96,11 @@ docker compose up --build
 | AI health | http://localhost:8000/ |
 | MySQL | `localhost:3307` (db `fleetscan`) |
 
-**Default demo tokens (override in production):**
+**Web login:**
 
 | Purpose | Env / default |
 |---------|----------------|
-| Admin web login | `FLEETSCAN_WEB_ACCESS_TOKEN` → `1234` |
-| Driver web login | `FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN` → `driver-demo` (+ Telegram `chatId`) |
+| Admin / driver web login | Send `/web` to the bot, enter the one-time code on the site |
 
 Open the Telegram bot configured in your environment, send `/start`, create a fleet, invite a driver, and submit a vehicle photo.
 
@@ -110,9 +113,13 @@ Important environment variables (see `docker-compose.yml`):
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_NAME` | Bot credentials from BotFather |
 | `FLEETSCAN_AI_BASE_URL` | AI service URL (default `http://ai:8000` in Compose) |
 | `FLEETSCAN_AI_MIN_CONFIDENCE` | Min OCR confidence for auto-pass (default `0.80`) |
-| `FLEETSCAN_WEB_ACCESS_TOKEN` | Shared admin UI access token |
-| `FLEETSCAN_WEB_ADMIN_CHAT_ID` | Admin Telegram chat ID binding |
-| `FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN` | Shared driver UI access token |
+| `ANTHROPIC_API_KEY` | Enables the Claude step of damage assessment (optional) |
+| `DAMAGE_MODEL` / `DAMAGE_EFFORT` | Claude model (default `claude-haiku-5-5`) and effort (default `low`) |
+| `DAMAGE_DETECTOR_PATH` | Local detector dir (default `fleet_ai/models/damage_detector`) |
+| `DAMAGE_LOCAL_SURE` | Local score trusted without Claude (default `0.75`) |
+| `DAMAGE_AUDIT_RATE` | Share of clean photos re-checked by Claude (default `0.05`) |
+| `DAMAGE_DEFECT_SEVERITIES` | Severities that send a car to review (default `moderate,severe`) |
+| `PLATE_COUNTRIES` | Plate formats to accept (default `UZ,RU`) |
 | `FLEETSCAN_UPLOAD_DIR` | Photo storage path |
 | `FLEETSCAN_CORS_ALLOWED_ORIGINS` | Allowed frontend origins |
 | `FLEETSCAN_API_BASE_URL` | API URL baked into frontend build |
@@ -126,11 +133,41 @@ For each Telegram photo (main inspection path):
 1. Store image → call AI `/analyze`
 2. Active **blacklist** match → `BLOCKED`
 3. Registered plate ≠ OCR plate → `UNDER_REVIEW`
-4. Low confidence or suspected damage → `UNDER_REVIEW`
+4. Photo is not a vehicle / unusable → `UNDER_REVIEW` (`invalid_photo`)
+5. Low confidence or damage of configured severity → `UNDER_REVIEW`
 5. Otherwise → `ACTIVE` (`auto_passed`)
 6. On `BLOCKED` / `UNDER_REVIEW` → notify fleet admins in Telegram
 
 > Driver **web** photo upload currently stores the photo only; full AI inspection runs on the **Telegram** photo flow.
+
+### Damage detection
+
+Each photo goes through:
+
+1. **Local detector** — free, offline, ~0.2 s on CPU. Classes: `scratch`, `dent`, `crack`, `lamp_broken`, `glass_shatter`, `tire_flat`.
+2. **Decided locally** if nothing is found, or damage is found with score ≥ `DAMAGE_LOCAL_SURE` and is not severe.
+3. **Sent to Claude Haiku** otherwise (and for `DAMAGE_AUDIT_RATE` of clean photos), with the local boxes as hints. Claude also names the damaged part and writes a Russian summary.
+4. Fallbacks: no local model → Claude only; no API key → local only; neither → image heuristic (`damage_method: heuristic`, unreliable).
+
+`damage_method` in the result is `local`, `hybrid`, `llm` or `heuristic`.
+
+**Training the local model** (COCO-format dataset, e.g. CarDD or a Roboflow export, plus your own labelled photos):
+
+```bash
+cd src/main/java/com/fleetScan/FleetscanAiDetection
+pip install -r tools/requirements-train.txt
+python tools/train_damage_detector.py --data /path/to/dataset --epochs 40
+```
+
+Both the Roboflow COCO export layout and the CarDD layout (`annotations/instances_*2017.json`) are detected automatically. The model is saved to `fleet_ai/models/damage_detector` (git-ignored).
+
+**Evaluating** — per-photo precision/recall per class and how much traffic the hybrid would decide locally:
+
+```bash
+python tools/evaluate_damage_detector.py --data /path/to/dataset --model fleet_ai/models/damage_detector
+```
+
+> **Dataset licensing.** CarDD is licensed for research only; commercial use (explicitly including *testing commercial systems*) needs written permission from the PIC Lab, CAS. A model trained on CarDD is a feasibility prototype and must not run in production without that permission. Check every dataset's license before commercial use. Note: the plate detector still uses Ultralytics YOLO (AGPL-3.0) — review licensing before a closed commercial launch.
 
 ### Main API groups
 
@@ -175,7 +212,7 @@ Early-stage startup prototype. Product and APIs may change quickly.
 
 ### Продукт
 
-FleetScan — мультиарендная платформа инспекции транспорта:
+Diesel — мультиарендная платформа инспекции транспорта:
 
 1. Админ парка создаёт флот в Telegram и приглашает водителей / наблюдателей.
 2. Водители присылают фото машины (перед, зад, салон, приборка и т.д.).
@@ -195,10 +232,11 @@ FleetScan — мультиарендная платформа инспекции
 ### Возможности
 
 - **Telegram-бот** — онбординг флота, инвайты, приём фото, команды blacklist, еженедельные напоминания
-- **AI-распознавание номеров** — FastAPI (EasyOCR + опционально YOLO), эвристика состояния
+- **AI-распознавание номеров** — FastAPI (EasyOCR + YOLO); узбекские (`01 A 123 BC`, `01 123 ABC`) и российские номера, настройка `PLATE_COUNTRIES`
+- **Гибридная оценка повреждений** — бесплатный локальный детектор (RT-DETRv2, Apache-2.0) проверяет каждое фото без интернета; спорные случаи (низкая уверенность, тяжёлые повреждения и 5% «чистых» фото для контроля) уходят в Claude Haiku (~$0.0005 за фото). Обучение: `tools/train_damage_detector.py`, подробности в английском разделе *Damage detection*
 - **Авторешения** — blacklist → blocked; несовпадение / низкая уверенность / повреждения → under review
 - **Админ UI** — обзор, инциденты, blacklist, водители, отчёты, аналитика
-- **Кабинет водителя** — вход по токену + Telegram chat ID, профиль, фото, детекции
+- **Вход на сайт через Telegram** — команда `/web` выдаёт одноразовый код (5 минут); админы и наблюдатели попадают в админку, водители — в кабинет
 - **Уведомления** — алерты админам при blocked / under review
 - **Экспорт** — Excel: детекции, инциденты, compliance водителей
 
@@ -224,7 +262,7 @@ Telegram ──► Spring Boot API (Java 21) ──► MySQL 8
 ### Структура репозитория
 
 ```
-FleetScan/
+Diesel/
 ├── docker-compose.yml          # Стек: db, app, ai, frontend
 ├── Dockerfile                  # Spring Boot
 ├── frontend/                   # Админка + кабинет водителя
@@ -240,8 +278,9 @@ FleetScan/
 **Нужно:** Docker и Docker Compose.
 
 ```bash
-git clone <repo-url> FleetScan
-cd FleetScan
+git clone <repo-url> Diesel
+cd Diesel
+cp .env.example .env   # set TELEGRAM_BOT_TOKEN (and optionally ANTHROPIC_API_KEY)
 docker compose up --build
 ```
 
@@ -253,12 +292,11 @@ docker compose up --build
 | AI | http://localhost:8000/ |
 | MySQL | `localhost:3307` (БД `fleetscan`) |
 
-**Демо-токены по умолчанию (в проде обязательно сменить):**
+**Вход на сайт:**
 
 | Назначение | Env / default |
 |------------|---------------|
-| Вход в админку | `FLEETSCAN_WEB_ACCESS_TOKEN` → `1234` |
-| Вход водителя | `FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN` → `driver-demo` (+ Telegram `chatId`) |
+| Вход в админку / кабинет | Отправьте боту `/web`, введите одноразовый код на сайте |
 
 Откройте Telegram-бота из вашей конфигурации: `/start` → создайте флот → пригласите водителя → отправьте фото машины.
 
@@ -269,9 +307,8 @@ docker compose up --build
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_NAME` | Данные бота из BotFather |
 | `FLEETSCAN_AI_BASE_URL` | URL AI-сервиса |
 | `FLEETSCAN_AI_MIN_CONFIDENCE` | Порог уверенности OCR (по умолчанию `0.80`) |
-| `FLEETSCAN_WEB_ACCESS_TOKEN` | Общий токен админки |
-| `FLEETSCAN_WEB_ADMIN_CHAT_ID` | Привязка admin chat ID |
-| `FLEETSCAN_DRIVER_WEB_ACCESS_TOKEN` | Общий токен кабинета водителя |
+| `ANTHROPIC_API_KEY` | Включает оценку повреждений через Claude (опционально) |
+| `PLATE_COUNTRIES` | Форматы номеров (по умолчанию `UZ,RU`) |
 | `FLEETSCAN_UPLOAD_DIR` | Путь хранения фото |
 | `FLEETSCAN_CORS_ALLOWED_ORIGINS` | Разрешённые origin фронтенда |
 | `FLEETSCAN_API_BASE_URL` | URL API при сборке фронтенда |

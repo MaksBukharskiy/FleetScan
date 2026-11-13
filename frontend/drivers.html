@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FleetScan | Водители</title>
+  <title>Diesel | Водители</title>
+  <script>try{if(localStorage.getItem("fleetscan.theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Onest:wght@400;500;600;700&family=Poppins:wght@500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -14,7 +19,7 @@
   <main class="shell">
     <header class="topbar">
       <div class="topbar-inner card">
-        <div class="brand"><span>ФлитСкан</span><span class="brand-badge">ВОДИТЕЛИ</span></div>
+        <div class="brand"><span class="brand-logo">Diesel</span><span class="brand-badge">ВОДИТЕЛИ</span></div>
         <nav class="anchor-nav">
           <a href="./overview.html" data-i18n="navOverview">Обзор</a>
           <a href="./incidents.html" data-i18n="navIncidents">Инциденты</a>
@@ -44,7 +49,7 @@
         </div>
       </div>
       <div class="status-panel">
-        <label class="field"><span>Единый пароль администратора</span><input id="accessTokenInput" type="password" data-i18n-placeholder="placeholderAdminPassword" placeholder="Введите пароль" /></label>
+        <label class="field"><span>Код из Telegram-бота (/web)</span><input id="accessTokenInput" type="text" autocomplete="one-time-code" data-i18n-placeholder="placeholderAdminPassword" placeholder="Например, K7P2-QX9M" /></label>
         <button class="btn btn-primary block" id="saveBtn">Войти</button>
         <p class="hint" id="connectionHint">Сначала выполните вход.</p>
       </div>
