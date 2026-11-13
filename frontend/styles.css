@@ -31,9 +31,10 @@
   --muted: #55665c;
   --subtle: #8a988f;
 
-  --accent: var(--brand-700);
+  --accent: var(--brand-700);        /* fills: buttons, toggles */
   --accent-hover: var(--brand-900);
-  --accent-text: #ffffff;
+  --accent-text: #ffffff;            /* text on accent fills */
+  --accent-ink: var(--brand-700);    /* accent-coloured text and icons */
   --surface: rgba(47, 125, 82, 0.08);
   --surface-2: rgba(47, 125, 82, 0.14);
   --focus: 0 0 0 3px rgba(47, 125, 82, 0.22);
@@ -69,35 +70,45 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #08110c;
-  --bg-gradient: linear-gradient(180deg, #0a140e 0%, #07100b 100%);
-  --dots: rgba(143, 209, 167, 0.05);
-  --panel: #0f1b14;
-  --panel-strong: #132219;
-  --panel-muted: #0c1711;
-  --field: #0b150f;
-  --line: rgba(190, 230, 205, 0.1);
-  --line-strong: rgba(190, 230, 205, 0.18);
-  --text: #e8f3ec;
-  --muted: #9db3a5;
-  --subtle: #6d8577;
+  /* Neutral graphite with a faint green tint; elevation comes from lighter
+     surfaces and hairline borders, the accent is a soft mint rather than neon. */
+  --bg: #0c100e;
+  --bg-gradient:
+    radial-gradient(1200px 600px at 15% -10%, rgba(76, 175, 120, 0.13), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(56, 160, 170, 0.08), transparent 55%),
+    linear-gradient(180deg, #0e1311 0%, #0b0f0d 100%);
+  --dots: rgba(220, 240, 228, 0.035);
+  --panel: #141a17;
+  --panel-strong: #19211d;
+  --panel-muted: #111613;
+  --field: #0f1412;
+  --line: rgba(220, 240, 228, 0.08);
+  --line-strong: rgba(220, 240, 228, 0.15);
+  --text: #edf3ef;
+  --muted: #a6b5ac;
+  --subtle: #74857b;
 
-  --accent: #3fae6c;
-  --accent-hover: #59c283;
-  --accent-text: #062012;
-  --surface: rgba(63, 174, 108, 0.1);
-  --surface-2: rgba(63, 174, 108, 0.18);
-  --focus: 0 0 0 3px rgba(63, 174, 108, 0.3);
-  --brand-gradient: linear-gradient(100deg, #5ccf8a 0%, #3cc2a6 55%, #5cb7d1 100%);
+  --accent: #2f9d63;
+  --accent-hover: #38b072;
+  --accent-text: #ffffff;
+  --accent-ink: #72d6a0;
+  --surface: rgba(114, 214, 160, 0.08);
+  --surface-2: rgba(114, 214, 160, 0.14);
+  --focus: 0 0 0 3px rgba(114, 214, 160, 0.28);
+  --brand-gradient: linear-gradient(100deg, #8be3b2 0%, #5fd0bf 50%, #7cc4ea 100%);
+  --brand-500: #5cc98e;
+  --logo-from: #3d7a52;
+  --logo-to: #285f40;
 
-  --danger: #ff6b61;
-  --danger-bg: rgba(255, 107, 97, 0.12);
-  --warning: #f2b34c;
-  --warning-bg: rgba(242, 179, 76, 0.12);
+  --danger: #ff8a80;
+  --danger-bg: rgba(255, 138, 128, 0.12);
+  --warning: #f5c26b;
+  --warning-bg: rgba(245, 194, 107, 0.12);
+  --success: #72d6a0;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 14px 34px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 28px 70px rgba(0, 0, 0, 0.6);
 
   color-scheme: dark;
 }
@@ -189,7 +200,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--line);
-  color: var(--accent);
+  color: var(--accent-ink);
   font-weight: 600;
 }
 
@@ -235,7 +246,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 }
 
 .anchor-nav a:hover { color: var(--text); background: var(--surface); }
-.anchor-nav a.is-active { color: var(--accent); background: var(--surface-2); font-weight: 600; }
+.anchor-nav a.is-active { color: var(--accent-ink); background: var(--surface-2); font-weight: 600; }
 
 .topbar-meta {
   display: inline-flex;
@@ -293,7 +304,7 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 
 .eyebrow {
   margin: 0 0 10px;
-  color: var(--accent);
+  color: var(--accent-ink);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
