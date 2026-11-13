@@ -827,7 +827,7 @@ async function refreshDrivers(preferredId = null) {
 
 async function refreshAll() {
   if (!state.sessionToken) {
-    els.connectionHint.textContent = "Введите единый пароль администратора и нажмите вход.";
+    els.connectionHint.textContent = "Отправьте боту /web и введите полученный код.";
     await Promise.all([loadSummary(), loadDetections(), loadIncidents(), loadBlacklist()]);
     await loadDrivers();
     renderWhoAmI();

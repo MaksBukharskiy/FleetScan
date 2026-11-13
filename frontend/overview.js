@@ -219,7 +219,7 @@ async function bootstrap() {
   bind();
   const ok = await restoreSession();
   if (!ok) {
-    els.hint.textContent = "Сессии нет. Введите пароль администратора.";
+    els.hint.textContent = "Сессии нет. Отправьте боту /web и введите код.";
     return;
   }
   await refreshAll();
