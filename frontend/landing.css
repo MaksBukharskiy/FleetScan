@@ -1,7 +1,9 @@
 /* Diesel landing page. Tokens come from styles.css. */
 
 .landing { font-size: 16px; }
-.landing main, .landing .l-header, .landing .l-footer { position: relative; z-index: 1; }
+.landing main, .landing .l-footer { position: relative; z-index: 1; }
+/* header must stay sticky (a plain position: relative here used to break it) */
+.landing .l-header { z-index: 20; }
 
 .l-container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
 
@@ -177,15 +179,20 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; /* newest message at the bottom, like a real chat */
   gap: 10px;
-  overflow: hidden;
+  /* messages scroll up like a real chat; older ones fade out at the top */
+  overflow-y: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 36px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 36px);
   background:
     radial-gradient(var(--dots) 1px, transparent 1px) 0 0 / 18px 18px,
     var(--panel);
 }
 
+.chat-body::-webkit-scrollbar { display: none; }
 .msg {
+  flex: none;
   max-width: 82%;
   padding: 9px 12px;
   border-radius: 14px;

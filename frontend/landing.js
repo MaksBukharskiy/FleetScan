@@ -404,6 +404,7 @@ function playDemo() {
         el.innerHTML = html;
       }
       body.appendChild(el);
+      body.scrollTo({ top: body.scrollHeight, behavior: reduced ? "auto" : "smooth" });
     }, at));
     delay += kind === "typing" ? 1100 : 700;
   }
