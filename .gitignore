@@ -43,3 +43,13 @@ out/
 **/venv/
 **/__pycache__/
 *.pyc
+
+# Secrets & runtime artefacts
+.env
+*.env
+!.env.example
+logs/
+*.log
+
+# Trained local damage model (large, distribute separately)
+**/models/damage_detector/

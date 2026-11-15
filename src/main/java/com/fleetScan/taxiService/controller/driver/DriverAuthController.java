@@ -23,7 +23,7 @@ public class DriverAuthController {
 
     @PostMapping("/login")
     public DriverLoginResponse login(@RequestBody DriverLoginRequest request) {
-        return new DriverLoginResponse(driverWebAuthService.login(request.accessToken(), request.chatId()));
+        return new DriverLoginResponse(driverWebAuthService.login(request.code()));
     }
 
     @GetMapping("/me")

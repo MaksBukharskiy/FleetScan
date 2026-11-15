@@ -1,0 +1,6 @@
+transformers>=5,<6
+accelerate>=1.0
+torch
+torchvision
+pillow
+scipy

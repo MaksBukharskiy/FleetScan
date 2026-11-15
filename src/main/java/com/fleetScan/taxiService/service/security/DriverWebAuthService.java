@@ -3,7 +3,6 @@ package com.fleetScan.taxiService.service.security;
 import com.fleetScan.taxiService.domain.autopark.driver.Driver;
 import com.fleetScan.taxiService.dto.DriverSessionView;
 import com.fleetScan.taxiService.repository.autopark.DriverRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,29 +17,18 @@ public class DriverWebAuthService {
 
     private static final long SESSION_TTL_MILLIS = 12L * 60L * 60L * 1000L;
 
-    private final String expectedAccessToken;
     private final DriverRepository driverRepository;
+    private final LoginCodeService loginCodeService;
     private final Map<String, SessionData> sessions = new ConcurrentHashMap<>();
 
-    public DriverWebAuthService(
-            @Value("${fleetscan.driver-web.access-token:}") String expectedAccessToken,
-            DriverRepository driverRepository
-    ) {
-        this.expectedAccessToken = expectedAccessToken;
+    public DriverWebAuthService(DriverRepository driverRepository, LoginCodeService loginCodeService) {
         this.driverRepository = driverRepository;
+        this.loginCodeService = loginCodeService;
     }
 
-    public String login(String accessToken, Long chatId) {
-        if (expectedAccessToken == null || expectedAccessToken.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Driver web token is not configured");
-        }
-        if (accessToken == null || !expectedAccessToken.equals(accessToken.trim())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid access token");
-        }
-        if (chatId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "chatId is required");
-        }
-
+    /** Log in with a one-time code from the Telegram bot (/web). */
+    public String login(String code) {
+        Long chatId = loginCodeService.redeem(code);
         Driver driver = driverRepository.findByChatIdAndIsActiveTrue(chatId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Driver not found or inactive"));
 

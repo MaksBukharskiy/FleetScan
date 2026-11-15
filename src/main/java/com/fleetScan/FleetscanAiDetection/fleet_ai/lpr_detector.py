@@ -1,6 +1,5 @@
 import easyocr
 import logging
-import re
 from typing import Optional, Tuple, List
 
 try:
@@ -9,90 +8,48 @@ except Exception:  # pragma: no cover
     cv2 = None
 
 from .plate_yolo import detect_plate_rois_yolo
+from .plate_formats import OCR_ALLOWLIST, match_plate, normalize
 logger = logging.getLogger(__name__)
 
 # Инициализация один раз при запуске сервера
 reader = easyocr.Reader(['en'], gpu=False)
 
-RU_PLATE_RE = re.compile(r'([ABEKMHOPCTYX]\\d{3}[ABEKMHOPCTYX]{2}\\d{2,3})')
-RU_PLATE_FULL_RE = re.compile(r'^[ABEKMHOPCTYX]\\d{3}[ABEKMHOPCTYX]{2}\\d{2,3}$')
-ALNUM_RE = re.compile(r'[^A-Z0-9]')
-ALLOWLIST = "ABEKMHOPCTYX0123456789"
-DIGIT_FIX = {
-    "O": "0",
-    "I": "1",
-    "Z": "2",
-    "S": "5",
-    "B": "8",
-    "G": "6",
-    "T": "7",
-}
+ALLOWLIST = OCR_ALLOWLIST
 
 
-def _normalize_text(text: str) -> str:
-    cleaned = ALNUM_RE.sub('', text.upper())
-    return cleaned
-
-
-def _extract_ru_plate(text: str) -> Optional[str]:
-    cleaned = _normalize_text(text)
-    match = RU_PLATE_RE.search(cleaned)
-    if match:
-        return match.group(1)
-    return None
-
-
-def _coerce_ru_plate(text: str) -> Optional[str]:
-    cleaned = _normalize_text(text)
-    if len(cleaned) < 8:
-        return None
-
-    # Сканируем окнами 8 и 9 символов
-    for size in (9, 8):
-        for i in range(0, len(cleaned) - size + 1):
-            candidate = cleaned[i:i + size]
-            # Чиним возможные ошибки в регионе (последние 2-3 символа)
-            region_len = 3 if size == 9 else 2
-            region = candidate[-region_len:]
-            region = "".join(DIGIT_FIX.get(ch, ch) for ch in region)
-            candidate_fixed = candidate[:-region_len] + region
-            if RU_PLATE_FULL_RE.match(candidate_fixed):
-                return candidate_fixed
-
-    # Если на конце 4 цифры, пробуем отбросить одну (регион из 3 цифр)
-    if len(cleaned) >= 9:
-        tail = cleaned[-4:]
-        if tail.isdigit():
-            candidate = cleaned[:-1]
-            if RU_PLATE_FULL_RE.match(candidate):
-                return candidate
-
-    return None
+def _joined_text(results: List[Tuple[List, str, float]]) -> Tuple[str, float]:
+    """Plates are often split into several OCR boxes ("01" + "A123BC"): join them left to right."""
+    if not results:
+        return "", 0.0
+    ordered = sorted(results, key=lambda r: min(pt[0] for pt in r[0]) if r[0] is not None else 0)
+    text = "".join(r[1] for r in ordered)
+    conf = min(float(r[2]) for r in ordered)
+    return text, conf
 
 
 def _pick_best_candidate(results: List[Tuple[List, str, float]]) -> Tuple[Optional[str], float]:
+    """
+    Returns (plate, confidence). A plate that matches a known format (UZ/RU)
+    always wins over raw text; if nothing matches, the raw text is returned
+    with its confidence halved so the backend sends it to manual review.
+    """
     if not results:
         return None, 0.0
 
-    best_plate = None
-    best_conf = 0.0
+    best_plate, best_conf = None, 0.0
+    candidates = [(text, float(conf)) for _, text, conf in results]
+    candidates.append(_joined_text(results))
 
-    for _, text, conf in results:
-        plate = _extract_ru_plate(text)
-        if plate and conf > best_conf:
-            best_plate = plate
-            best_conf = float(conf)
+    for text, conf in candidates:
+        found = match_plate(text)
+        if found and conf > best_conf:
+            best_plate, best_conf = found[0], conf
 
     if best_plate:
         return best_plate, best_conf
 
-    # Если совпадений с шаблоном нет — берём самый уверенный текст
-    best_result = max(results, key=lambda x: x[2])
-    coerced = _coerce_ru_plate(best_result[1])
-    if coerced:
-        return coerced, float(best_result[2])
-
-    return _normalize_text(best_result[1]) or None, float(best_result[2])
+    _, text, conf = max(results, key=lambda x: x[2])
+    return normalize(text) or None, float(conf) * 0.5
 
 
 def _readtext_variants_from_bgr(img_bgr):
@@ -189,6 +146,6 @@ def recognize_license(image_path: str) -> Tuple[Optional[str], float]:
             results = reader.readtext(image_path, allowlist=ALLOWLIST)
         return _pick_best_candidate(results)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Ошибка распознавания")
         return None, 0.0

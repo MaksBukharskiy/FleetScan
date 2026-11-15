@@ -41,6 +41,15 @@ public class DetectedVehicle {
     @Column(nullable = false)
     private String imagePath;
 
+    @Column(name = "damage_method", length = 16)
+    private String damageMethod;
+
+    @Column(name = "damage_severity", length = 16)
+    private String damageSeverity;
+
+    @Column(name = "damage_summary", length = 1024)
+    private String damageSummary;
+
     @ManyToOne
     @JoinColumn(name = "blacklist_id")
     private BlackList blackList;

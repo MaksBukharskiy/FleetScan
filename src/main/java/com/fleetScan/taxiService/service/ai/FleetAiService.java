@@ -66,10 +66,15 @@ public class FleetAiService {
             String condition = asString(response, "condition", "unknown");
             double conditionConfidence = asDouble(response, "condition_confidence", 0.0);
 
-            log.info("AI analysis complete - Plate: {}, Confidence: {:.2f}, Condition: {}", 
-                    plate, plateConfidence, condition);
+            String damageMethod = asString(response, "damage_method", null);
+            String damageSeverity = asString(response, "damage_severity", null);
+            String damageSummary = asString(response, "damage_summary", null);
 
-            return new AiAnalysisResult(plate, plateConfidence, condition, conditionConfidence);
+            log.info("AI analysis complete - Plate: {}, Confidence: {}, Condition: {} ({})",
+                    plate, String.format("%.2f", plateConfidence), condition, damageMethod);
+
+            return new AiAnalysisResult(plate, plateConfidence, condition, conditionConfidence,
+                    damageMethod, damageSeverity, damageSummary);
 
         } catch (Exception e) {
             log.error("AI service call failed. URL: {}/analyze. Error: {}", aiBaseUrl, e.getMessage());

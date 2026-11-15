@@ -1,6 +1,6 @@
-# FleetScan Frontend
+# Diesel Frontend
 
-Отдельный статический сайт для FleetScan.
+Отдельный статический сайт для Diesel.
 
 ## Страницы
 

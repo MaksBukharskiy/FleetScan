@@ -27,7 +27,7 @@ public class WebAuthController {
 
     @PostMapping("/login")
     public WebLoginResponse login(@RequestBody WebLoginRequest request) {
-        return new WebLoginResponse(webAuthService.login(request.accessToken()));
+        return new WebLoginResponse(webAuthService.login(request.code()));
     }
 
     @GetMapping("/me")

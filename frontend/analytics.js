@@ -47,7 +47,7 @@ function barItem(label, value, total, tone = "accent") {
   return `
     <div>
       <div class="row" style="justify-content:space-between;"><strong>${label}</strong><span class="hint">${value} (${pct}%)</span></div>
-      <div style="height:10px; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:rgba(255,255,255,0.04);">
+      <div style="height:10px; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:var(--panel-muted);">
         <div style="height:100%; width:${pct}%; background:var(--${tone});"></div>
       </div>
     </div>
@@ -120,7 +120,7 @@ async function bootstrap() {
   bind();
   const ok = await restoreSession();
   if (!ok) {
-    els.hint.textContent = tx("Сессии нет. Введите пароль администратора.", "No session. Enter admin password.");
+    els.hint.textContent = tx("Сессии нет. Отправьте боту /web и введите код.", "No session. Send /web to the bot and enter the code.");
     return;
   }
   await refreshAll();
